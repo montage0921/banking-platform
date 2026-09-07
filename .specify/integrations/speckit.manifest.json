@@ -1,6 +1,6 @@
 {
   "integration": "speckit",
-  "version": "0.9.4",
+  "version": "1.0.4",
   "installed_at": "2026-06-04T18:18:59.415530+00:00",
   "files": {
     ".specify/scripts/bash/common.sh": "1b7f1e7d84fa255ab151410caf66055b5498270a7cebcc0921df130929429c08",
@@ -17,6 +17,8 @@
     ".specify/scripts/powershell/check-prerequisites.ps1": "81fa1f86fae9fa326c2c84d8de2a6fe9230d29b57dd48d8e31724181e9c14dd7",
     ".specify/scripts/powershell/common.ps1": "d36db6a018f77377defe34d20025c2721a7950ce5e10646d500c9f0f2bb4b787",
     ".specify/scripts/powershell/setup-plan.ps1": "c4421bd2544a3b25fa07858f1c7cb854ef56a26a972853302e9763107da023cd",
-    ".specify/scripts/powershell/create-new-feature.ps1": "24b07de9e1084ebe11f3dc65466d279b0aa4dbff7e7b011dcf303d299e994c9d"
+    ".specify/scripts/powershell/create-new-feature.ps1": "24b07de9e1084ebe11f3dc65466d279b0aa4dbff7e7b011dcf303d299e994c9d",
+    ".specify/scripts/bash/resolve-template.sh": "829e227096abc8bf0889889ec9f792f503ca5d395b7836a8a7eb739ee75214e7",
+    ".specify/.gitignore": "8c908410d177a1ef3d0dee16d7ad55f2ac3333df3104c4d4adee1c9b82f1dbc1"
   }
 }
