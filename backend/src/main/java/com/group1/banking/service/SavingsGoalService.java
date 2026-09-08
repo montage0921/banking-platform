@@ -95,7 +95,7 @@ public class SavingsGoalService {
         
         auditService.log(AuditEventType.SAVINGS_GOAL_CREATED,
             "savings-goals",
-            RoleName.CUSTOMER,
+            RoleName.RETAIL_CUSTOMER,
             customerId.toString(),
             "SAVINGS_GOAL",
             String.valueOf(savedGoal.getGoalId()),
@@ -157,7 +157,7 @@ public class SavingsGoalService {
         
         auditService.log(AuditEventType.UPDATE_SAVINGS_GOAL,
             "savings-goals",
-            com.group1.banking.enums.RoleName.CUSTOMER,
+            com.group1.banking.enums.RoleName.RETAIL_CUSTOMER,
             customerId.toString(),
             "SAVINGS_GOAL",
             String.valueOf(goalId),
@@ -180,7 +180,7 @@ public class SavingsGoalService {
         
         auditService.log(AuditEventType.DELETE_SAVINGS_GOAL,
             "savings-goals",
-            RoleName.CUSTOMER,
+            RoleName.RETAIL_CUSTOMER,
             customerId.toString(),
             "SAVINGS_GOAL",
             String.valueOf(goalId),

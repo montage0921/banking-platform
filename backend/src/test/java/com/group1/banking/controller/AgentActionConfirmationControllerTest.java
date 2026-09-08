@@ -52,7 +52,7 @@ class AgentActionConfirmationControllerTest {
     @WithCustomUser(customerId = 42L)
     void confirm_shouldExecuteTransfer_whenTokenValid() throws Exception {
         PendingAgentActionEntity resolved = transferEntity("tok-1");
-        when(confirmationGateService.confirmAndConsume(eq("tok-1"), eq(42L), eq("CUSTOMER"))).thenReturn(resolved);
+        when(confirmationGateService.confirmAndConsume(eq("tok-1"), eq(42L), eq("RETAIL_CUSTOMER"))).thenReturn(resolved);
         when(monetaryOperationService.transfer(any(), eq("tok-1")))
                 .thenReturn(new OperationResult(HttpStatus.OK, Map.of("message", "Transfer complete")));
 
@@ -64,7 +64,7 @@ class AgentActionConfirmationControllerTest {
     @Test
     @WithCustomUser(customerId = 42L)
     void confirm_shouldReturn404_whenTokenNotFound() throws Exception {
-        when(confirmationGateService.confirmAndConsume(eq("missing"), eq(42L), eq("CUSTOMER")))
+        when(confirmationGateService.confirmAndConsume(eq("missing"), eq(42L), eq("RETAIL_CUSTOMER")))
                 .thenThrow(new NotFoundException("CONFIRMATION_NOT_FOUND", "No pending action found for this token.", null));
 
         mockMvc.perform(post("/api/chat/confirmations/missing"))
@@ -75,7 +75,7 @@ class AgentActionConfirmationControllerTest {
     @Test
     @WithCustomUser(customerId = 42L)
     void confirm_shouldReturn409_whenAlreadyResolved() throws Exception {
-        when(confirmationGateService.confirmAndConsume(eq("tok-2"), eq(42L), eq("CUSTOMER")))
+        when(confirmationGateService.confirmAndConsume(eq("tok-2"), eq(42L), eq("RETAIL_CUSTOMER")))
                 .thenThrow(new ConflictException("CONFIRMATION_ALREADY_RESOLVED", "This action has already been executed.", null));
 
         mockMvc.perform(post("/api/chat/confirmations/tok-2"))
@@ -85,7 +85,7 @@ class AgentActionConfirmationControllerTest {
     @Test
     @WithCustomUser(customerId = 42L)
     void confirm_shouldReturn410_whenExpired() throws Exception {
-        when(confirmationGateService.confirmAndConsume(eq("tok-3"), eq(42L), eq("CUSTOMER")))
+        when(confirmationGateService.confirmAndConsume(eq("tok-3"), eq(42L), eq("RETAIL_CUSTOMER")))
                 .thenThrow(new GoneException("CONFIRMATION_EXPIRED", "This confirmation has expired.", null));
 
         mockMvc.perform(post("/api/chat/confirmations/tok-3"))

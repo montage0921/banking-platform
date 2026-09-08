@@ -102,7 +102,7 @@ public class MonetaryOperationService {
 	                    .orElseThrow(() -> new UnauthorisedException("UNAUTHORIZED", "User not found"));
 
 	            boolean isAdmin = user.getRoles().stream()
-	                    .anyMatch(r -> r.name().equalsIgnoreCase("ADMIN") || r.name().equalsIgnoreCase("ROLE_ADMIN"));
+	                    .anyMatch(r -> r.name().equalsIgnoreCase("BANK_ADMINISTRATOR") || r.name().equalsIgnoreCase("ROLE_BANK_ADMINISTRATOR"));
 
 	            if (!isAdmin && !user.getCustomerId().equals(account.getCustomer().getCustomerId())) {
 	                result = unauthorized("UNAUTHORIZED", "You can only deposit into your own account", null);
@@ -131,7 +131,7 @@ public class MonetaryOperationService {
 							transactionRepository.save(transaction);
 
 							// Audit: deposit made
-							RoleName actorRoleEnum = isAdmin ? RoleName.ADMIN : RoleName.CUSTOMER;
+							RoleName actorRoleEnum = isAdmin ? RoleName.BANK_ADMINISTRATOR : RoleName.RETAIL_CUSTOMER;
 							auditService.log(AuditEventType.DEPOSIT_MADE,
 								"monetary",
 								actorRoleEnum,
@@ -186,7 +186,7 @@ public class MonetaryOperationService {
 	                    .orElseThrow(() -> new UnauthorisedException("UNAUTHORIZED", "User not found"));
 
 	            boolean isAdmin = user.getRoles().stream()
-	                    .anyMatch(r -> r.name().equalsIgnoreCase("ADMIN") || r.name().equalsIgnoreCase("ROLE_ADMIN"));
+	                    .anyMatch(r -> r.name().equalsIgnoreCase("BANK_ADMINISTRATOR") || r.name().equalsIgnoreCase("ROLE_BANK_ADMINISTRATOR"));
 
 	            if (!isAdmin && !user.getCustomerId().equals(account.getCustomer().getCustomerId())) {
 	                result = unauthorized("UNAUTHORIZED", "You can only withdraw from your own account", null);
@@ -233,7 +233,7 @@ public class MonetaryOperationService {
 							transactionRepository.save(transaction);
 
 							// Audit: withdrawal made (success)
-							RoleName actorRoleEnum = isAdmin ? RoleName.ADMIN : RoleName.CUSTOMER;
+							RoleName actorRoleEnum = isAdmin ? RoleName.BANK_ADMINISTRATOR : RoleName.RETAIL_CUSTOMER;
 							auditService.log(AuditEventType.WITHDRAWAL_MADE,
 								"monetary",
 								actorRoleEnum,
@@ -307,7 +307,7 @@ public class MonetaryOperationService {
 	            .orElseThrow(() -> new UnauthorisedException("UNAUTHORIZED", "User not found"));
 
 	    boolean isAdmin = user.getRoles().stream()
-	            .anyMatch(r -> r.name().equalsIgnoreCase("ADMIN") || r.name().equalsIgnoreCase("ROLE_ADMIN"));
+	            .anyMatch(r -> r.name().equalsIgnoreCase("BANK_ADMINISTRATOR") || r.name().equalsIgnoreCase("ROLE_BANK_ADMINISTRATOR"));
 
 	    if (!isAdmin && !user.getCustomerId().equals(from.getCustomer().getCustomerId())) {
 	        return persistAndReturn(storageKey, idempotencyKey, userId, TRANSFER,
@@ -372,7 +372,7 @@ public class MonetaryOperationService {
 		transactionRepository.save(credit);
 
 		// Audit: funds transferred
-		RoleName actorRoleEnum = isAdmin ? RoleName.ADMIN : RoleName.CUSTOMER;
+		RoleName actorRoleEnum = isAdmin ? RoleName.BANK_ADMINISTRATOR : RoleName.RETAIL_CUSTOMER;
 		auditService.log(AuditEventType.FUNDS_TRANSFERRED,
 			"transfers",
 			actorRoleEnum,

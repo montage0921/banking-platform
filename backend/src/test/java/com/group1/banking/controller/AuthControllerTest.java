@@ -60,7 +60,7 @@ class AuthControllerTest {
         UserResponse response = new UserResponse();
         response.setUserId(UUID.randomUUID());
         response.setUsername("jane@example.com");
-        response.setRoles(List.of(RoleName.CUSTOMER));
+        response.setRoles(List.of(RoleName.RETAIL_CUSTOMER));
         response.setActive(true);
         response.setCreatedAt(Instant.now());
 
@@ -130,7 +130,7 @@ class AuthControllerTest {
         UserResponse response = new UserResponse();
         response.setUserId(UUID.randomUUID());
         response.setUsername("jane@example.com");
-        response.setRoles(List.of(RoleName.CUSTOMER));
+        response.setRoles(List.of(RoleName.RETAIL_CUSTOMER));
         response.setActive(true);
 
         when(authService.register(any(RegisterRequest.class))).thenReturn(response);

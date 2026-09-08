@@ -7,6 +7,7 @@ import org.springframework.boot.jdbc.autoconfigure.DataSourceProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
  * The application's primary datasource: the H2/MySQL database holding all core banking
@@ -56,5 +57,11 @@ public class PrimaryDataSourceConfig {
     @ConfigurationProperties("spring.datasource.hikari")
     public DataSource dataSource(DataSourceProperties properties) {
         return properties.initializeDataSourceBuilder().build();
+    }
+
+    @Bean(name = "primaryJdbcTemplate")
+    @Primary
+    public JdbcTemplate primaryJdbcTemplate(DataSource dataSource) {
+        return new JdbcTemplate(dataSource);
     }
 }

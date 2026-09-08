@@ -79,13 +79,13 @@ class AccountServiceTest {
         customerUser = new User();
         customerUser.setUserId(userId);
         customerUser.setCustomerId(42L);
-        customerUser.setRoles(List.of(RoleName.CUSTOMER));
+        customerUser.setRoles(List.of(RoleName.RETAIL_CUSTOMER));
         customerUser.setActive(true);
 
         adminUser = new User();
         adminUser.setUserId(UUID.randomUUID());
         adminUser.setCustomerId(99L);
-        adminUser.setRoles(List.of(RoleName.ADMIN));
+        adminUser.setRoles(List.of(RoleName.BANK_ADMINISTRATOR));
         adminUser.setActive(true);
 
         customer = new Customer();

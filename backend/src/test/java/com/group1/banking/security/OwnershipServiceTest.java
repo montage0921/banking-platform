@@ -31,7 +31,7 @@ class OwnershipServiceTest {
         customerUser.setUserId(UUID.randomUUID());
         customerUser.setUsername("customer@example.com");
         customerUser.setPasswordHash("hash");
-        customerUser.setRoles(new ArrayList<>(List.of(RoleName.CUSTOMER)));
+        customerUser.setRoles(new ArrayList<>(List.of(RoleName.RETAIL_CUSTOMER)));
         customerUser.setActive(true);
         customerUser.setCustomerId(42L);
         customerPrincipal = new CustomUserPrincipal(customerUser);
@@ -40,7 +40,7 @@ class OwnershipServiceTest {
         adminUser.setUserId(UUID.randomUUID());
         adminUser.setUsername("admin@example.com");
         adminUser.setPasswordHash("hash");
-        adminUser.setRoles(new ArrayList<>(List.of(RoleName.ADMIN)));
+        adminUser.setRoles(new ArrayList<>(List.of(RoleName.BANK_ADMINISTRATOR)));
         adminUser.setActive(true);
         adminUser.setCustomerId(1L);
         adminPrincipal = new CustomUserPrincipal(adminUser);
@@ -82,7 +82,7 @@ class OwnershipServiceTest {
         user.setUserId(UUID.randomUUID());
         user.setUsername("noid@example.com");
         user.setPasswordHash("hash");
-        user.setRoles(new ArrayList<>(List.of(RoleName.CUSTOMER)));
+        user.setRoles(new ArrayList<>(List.of(RoleName.RETAIL_CUSTOMER)));
         user.setActive(true);
         user.setCustomerId(null);
         CustomUserPrincipal principalWithNoCustomerId = new CustomUserPrincipal(user);

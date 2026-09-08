@@ -119,7 +119,7 @@ public class TransactionHistoryService {
                 try {
                     actorRole = RoleName.valueOf(resolveRole(caller));
                 } catch (Exception ex) {
-                    actorRole = RoleName.CUSTOMER;
+                    actorRole = RoleName.RETAIL_CUSTOMER;
                 }
                 auditService.log(AuditEventType.TRANSACTION_HISTORY_DENIED,
                             "transaction-history",
@@ -146,7 +146,7 @@ public class TransactionHistoryService {
         try {
             actorRole2 = com.group1.banking.enums.RoleName.valueOf(resolveRole(caller));
         } catch (Exception ex) {
-            actorRole2 = com.group1.banking.enums.RoleName.CUSTOMER;
+            actorRole2 = com.group1.banking.enums.RoleName.RETAIL_CUSTOMER;
         }
         auditService.log(com.group1.banking.entity.AuditEventType.TRANSACTION_HISTORY_VIEWED,
             "transaction-history",
@@ -211,7 +211,7 @@ public class TransactionHistoryService {
                 try {
                 actorRoleEnum = com.group1.banking.enums.RoleName.valueOf(resolveRole(caller));
                 } catch (Exception ex) {
-                actorRoleEnum = com.group1.banking.enums.RoleName.CUSTOMER;
+                actorRoleEnum = com.group1.banking.enums.RoleName.RETAIL_CUSTOMER;
                 }
                 auditService.log(com.group1.banking.entity.AuditEventType.TRANSACTION_HISTORY_EXPORTED,
                     "export",

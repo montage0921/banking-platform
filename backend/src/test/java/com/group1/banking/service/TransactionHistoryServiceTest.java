@@ -66,7 +66,7 @@ class TransactionHistoryServiceTest {
         customerPrincipal = new UserPrincipal(
                 UUID.randomUUID().toString(),
                 "customer@test.com",
-                List.of("CUSTOMER"),
+                List.of("RETAIL_CUSTOMER"),
                 List.of("CUSTOMER_READ", "CUSTOMER_CREATE", "CUSTOMER_UPDATE"),
                 42L);
 
@@ -124,7 +124,7 @@ class TransactionHistoryServiceTest {
     void getHistory_shouldThrow_whenNoPermission() {
         UserPrincipal noPermPrincipal = new UserPrincipal(
                 UUID.randomUUID().toString(), "user@test.com",
-                List.of("CUSTOMER"), List.of(), 42L); // no CUSTOMER_READ permission
+                List.of("RETAIL_CUSTOMER"), List.of(), 42L); // no CUSTOMER_READ permission
 
         assertThatThrownBy(() -> transactionHistoryService.getHistory(1001L, null, null, noPermPrincipal))
                 .isInstanceOf(PermissionDeniedException.class);
@@ -246,7 +246,7 @@ class TransactionHistoryServiceTest {
     void exportPdf_shouldThrow_whenNoPermission() {
         UserPrincipal noPermPrincipal = new UserPrincipal(
                 UUID.randomUUID().toString(), "user@test.com",
-                List.of("CUSTOMER"), List.of(), 42L);
+                List.of("RETAIL_CUSTOMER"), List.of(), 42L);
 
         assertThatThrownBy(() -> transactionHistoryService.exportPdf(1001L, null, null, noPermPrincipal))
                 .isInstanceOf(PermissionDeniedException.class);

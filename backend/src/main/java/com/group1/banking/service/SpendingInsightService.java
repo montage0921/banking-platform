@@ -138,8 +138,8 @@ public class SpendingInsightService {
         response.setTopTransactions(topTransactions);
         response.setSixMonthTrend(trend);
 
-        com.group1.banking.enums.RoleName actorRole = resolvePrimaryRole(caller).equalsIgnoreCase("ADMIN")
-            ? RoleName.ADMIN : RoleName.CUSTOMER;
+        com.group1.banking.enums.RoleName actorRole = resolvePrimaryRole(caller).equalsIgnoreCase("BANK_ADMINISTRATOR")
+            ? RoleName.BANK_ADMINISTRATOR : RoleName.RETAIL_CUSTOMER;
         auditService.log(AuditEventType.INSIGHTS_READ,
             "insights",
             actorRole,
@@ -193,8 +193,8 @@ public class SpendingInsightService {
 
         List<CategoryBreakdownItem> breakdown = buildBreakdown(eligible, totalDebitSpend);
 
-        RoleName actorRole2 = resolvePrimaryRole(caller).equalsIgnoreCase("ADMIN")
-            ? RoleName.ADMIN : RoleName.CUSTOMER;
+        RoleName actorRole2 = resolvePrimaryRole(caller).equalsIgnoreCase("BANK_ADMINISTRATOR")
+            ? RoleName.BANK_ADMINISTRATOR : RoleName.RETAIL_CUSTOMER;
         auditService.log(AuditEventType.TRANSACTION_RECATEGORISE,
             "insights",
             actorRole2,
@@ -299,7 +299,7 @@ public class SpendingInsightService {
             .map(GrantedAuthority::getAuthority)
             .anyMatch(authority -> authority.equals("INSIGHTS:READ")
                 || authority.equals("CUSTOMER_READ")
-                || authority.equals("ROLE_ADMIN"));
+                || authority.equals("ROLE_BANK_ADMINISTRATOR"));
         }
 
         private String resolvePrimaryRole(CustomUserPrincipal caller) {

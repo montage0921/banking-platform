@@ -34,7 +34,7 @@ public @interface WithCustomUser {
             user.setUserId(UUID.randomUUID());
             user.setUsername("test@example.com");
             user.setPasswordHash("hash");
-            user.setRoles(List.of(RoleName.CUSTOMER));
+            user.setRoles(List.of(RoleName.RETAIL_CUSTOMER));
             user.setActive(true);
             user.setCustomerId(annotation.customerId());
 

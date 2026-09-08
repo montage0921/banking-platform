@@ -39,7 +39,7 @@ class UserMapperTest {
     void toResponse_shouldMapRoles() {
         User user = buildUser();
         UserResponse response = userMapper.toResponse(user);
-        assertThat(response.getRoles()).containsExactly(RoleName.CUSTOMER);
+        assertThat(response.getRoles()).containsExactly(RoleName.RETAIL_CUSTOMER);
     }
 
     @Test
@@ -68,7 +68,7 @@ class UserMapperTest {
         user.setUserId(UUID.randomUUID());
         user.setUsername("alice@example.com");
         user.setPasswordHash("hash");
-        user.setRoles(new ArrayList<>(List.of(RoleName.CUSTOMER)));
+        user.setRoles(new ArrayList<>(List.of(RoleName.RETAIL_CUSTOMER)));
         user.setCustomerId(42L);
         user.setActive(true);
         user.setExternalSubjectId("ext-sub-123");

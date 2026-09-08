@@ -67,7 +67,7 @@ class MonthlyStatementServiceTest {
         customerUser.setUserId(UUID.randomUUID());
         customerUser.setUsername("alice@example.com");
         customerUser.setPasswordHash("hash");
-        customerUser.setRoles(new ArrayList<>(List.of(RoleName.CUSTOMER)));
+        customerUser.setRoles(new ArrayList<>(List.of(RoleName.RETAIL_CUSTOMER)));
         customerUser.setActive(true);
         customerUser.setCustomerId(42L);
         customerCaller = new CustomUserPrincipal(customerUser);
@@ -76,7 +76,7 @@ class MonthlyStatementServiceTest {
         adminUser.setUserId(UUID.randomUUID());
         adminUser.setUsername("admin@example.com");
         adminUser.setPasswordHash("hash");
-        adminUser.setRoles(new ArrayList<>(List.of(RoleName.ADMIN)));
+        adminUser.setRoles(new ArrayList<>(List.of(RoleName.BANK_ADMINISTRATOR)));
         adminUser.setActive(true);
         adminUser.setCustomerId(1L);
         adminCaller = new CustomUserPrincipal(adminUser);
@@ -145,7 +145,7 @@ class MonthlyStatementServiceTest {
         otherUser.setUserId(UUID.randomUUID());
         otherUser.setUsername("other@example.com");
         otherUser.setPasswordHash("hash");
-        otherUser.setRoles(new ArrayList<>(List.of(RoleName.CUSTOMER)));
+        otherUser.setRoles(new ArrayList<>(List.of(RoleName.RETAIL_CUSTOMER)));
         otherUser.setActive(true);
         otherUser.setCustomerId(99L);
         CustomUserPrincipal otherCaller = new CustomUserPrincipal(otherUser);
@@ -192,7 +192,7 @@ class MonthlyStatementServiceTest {
 
         assertThat(result).isEqualTo(fakePdf);
         verify(exportCacheRepository).save(any(ExportCacheEntity.class));
-        verify(auditService).log(eq(com.group1.banking.entity.AuditEventType.STATEMENT_DOWNLOADED), anyString(), eq(RoleName.CUSTOMER), anyString(),
+        verify(auditService).log(eq(com.group1.banking.entity.AuditEventType.STATEMENT_DOWNLOADED), anyString(), eq(RoleName.RETAIL_CUSTOMER), anyString(),
                 eq("STATEMENT"), anyString(), eq(com.group1.banking.entity.AuditOutcome.SUCCESS), any());
     }
 

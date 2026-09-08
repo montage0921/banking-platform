@@ -46,7 +46,7 @@ import static org.mockito.Mockito.when;
 class SavingsInsightChatServiceTest {
 
     private static final Long CUSTOMER_ID = 42L;
-    private static final String ACTOR_ROLE = "CUSTOMER";
+        private static final String ACTOR_ROLE = "RETAIL_CUSTOMER";
     private static final Long CHAT_LOG_ID = 999L;
 
     private SavingsChatGuardrailService guardrailService;
@@ -128,7 +128,7 @@ class SavingsInsightChatServiceTest {
                 anyString(), eq("ANSWERED"),
                 eq(true), eq(false), eq(List.of("Your recent transaction history")), eq(List.of()));
         verify(auditService).log(eq(AuditEventType.CHATBOT_QUERY_ANSWERED), eq("SAVINGS_INSIGHT_CHATBOT"),
-                eq(RoleName.CUSTOMER), eq("42"), eq("CHATBOT_INTERACTION"), eq(CHAT_LOG_ID.toString()),
+                eq(RoleName.RETAIL_CUSTOMER), eq("42"), eq("CHATBOT_INTERACTION"), eq(CHAT_LOG_ID.toString()),
                 eq(AuditOutcome.SUCCESS), eq("ANSWERED"));
     }
 
@@ -150,7 +150,7 @@ class SavingsInsightChatServiceTest {
                 eq(true), eq(true),
                 eq(List.of("Savings knowledge base: emergency-funds.md")), eq(List.of()));
         verify(auditService).log(eq(AuditEventType.CHATBOT_QUERY_ANSWERED), eq("SAVINGS_INSIGHT_CHATBOT"),
-                eq(RoleName.CUSTOMER), eq("42"), eq("CHATBOT_INTERACTION"), eq(CHAT_LOG_ID.toString()),
+                eq(RoleName.RETAIL_CUSTOMER), eq("42"), eq("CHATBOT_INTERACTION"), eq(CHAT_LOG_ID.toString()),
                 eq(AuditOutcome.SUCCESS), eq("FALLBACK"));
     }
 
@@ -167,7 +167,7 @@ class SavingsInsightChatServiceTest {
         verify(chatLogRepository).log(eq(CUSTOMER_ID), anyString(), anyString(), eq("FALLBACK"),
                 eq(false), eq(true), eq(List.of()), eq(List.of()));
         verify(auditService).log(eq(AuditEventType.CHATBOT_QUERY_ANSWERED), eq("SAVINGS_INSIGHT_CHATBOT"),
-                eq(RoleName.CUSTOMER), eq("42"), eq("CHATBOT_INTERACTION"), eq(CHAT_LOG_ID.toString()),
+                eq(RoleName.RETAIL_CUSTOMER), eq("42"), eq("CHATBOT_INTERACTION"), eq(CHAT_LOG_ID.toString()),
                 eq(AuditOutcome.SUCCESS), eq("FALLBACK"));
     }
 
@@ -186,7 +186,7 @@ class SavingsInsightChatServiceTest {
                 anyString(), eq("GUARDRAIL_BLOCKED"),
                 eq(false), eq(false), eq(List.of()), eq(List.of()));
         verify(auditService).log(eq(AuditEventType.CHATBOT_QUERY_ANSWERED), eq("SAVINGS_INSIGHT_CHATBOT"),
-                eq(RoleName.CUSTOMER), eq("42"), eq("CHATBOT_INTERACTION"), eq(CHAT_LOG_ID.toString()),
+                eq(RoleName.RETAIL_CUSTOMER), eq("42"), eq("CHATBOT_INTERACTION"), eq(CHAT_LOG_ID.toString()),
                 eq(AuditOutcome.DENIED), eq("GUARDRAIL_BLOCKED"));
     }
 
@@ -206,7 +206,7 @@ class SavingsInsightChatServiceTest {
         verify(chatLogRepository).log(eq(CUSTOMER_ID), anyString(), anyString(), eq("ERROR"),
                 eq(false), eq(true), eq(List.of()), eq(List.of()));
         verify(auditService).log(eq(AuditEventType.CHATBOT_QUERY_ANSWERED), eq("SAVINGS_INSIGHT_CHATBOT"),
-                eq(RoleName.CUSTOMER), eq("42"), eq("CHATBOT_INTERACTION"), eq(CHAT_LOG_ID.toString()),
+                eq(RoleName.RETAIL_CUSTOMER), eq("42"), eq("CHATBOT_INTERACTION"), eq(CHAT_LOG_ID.toString()),
                 eq(AuditOutcome.ERROR), eq("ERROR"));
     }
 

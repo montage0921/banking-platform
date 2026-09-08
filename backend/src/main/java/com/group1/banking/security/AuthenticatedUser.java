@@ -12,7 +12,7 @@ public record AuthenticatedUser(
         List<String> permissions) {
 
     public boolean isAdmin() {
-        return roles.contains("ADMIN");
+        return roles.contains("BANK_ADMINISTRATOR");
     }
 
     public Collection<? extends GrantedAuthority> authorities() {

@@ -25,7 +25,8 @@ public class ExportCacheEntity {
     @Column(name = "param_hash", nullable = false, length = 64)
     private String paramHash;
 
-    @Column(name = "pdf_data", nullable = false, columnDefinition = "LONGBLOB")
+    @Lob
+    @Column(name = "pdf_data", nullable = false)
     private byte[] pdfData;
 
     @Column(name = "created_at", nullable = false)

@@ -169,7 +169,7 @@ public class StandingOrderExecutionJob {
                 // Log but do not fail the scheduler
                 auditService.log(AuditEventType.NOTIFICATION_FAILED,
                         "notifications",
-                        RoleName.ADMIN,
+                        RoleName.BANK_ADMINISTRATOR,
                         "-1",
                         "STANDING_ORDER",
                         order.getStandingOrderId(),
@@ -223,7 +223,7 @@ public class StandingOrderExecutionJob {
 
         auditService.log(AuditEventType.STANDING_ORDER_EXECUTED,
             "standing-orders",
-            RoleName.ADMIN,
+            RoleName.BANK_ADMINISTRATOR,
             "-1",
             "STANDING_ORDER",
             order.getStandingOrderId(),

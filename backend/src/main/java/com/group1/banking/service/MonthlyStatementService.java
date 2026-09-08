@@ -83,7 +83,7 @@ public class MonthlyStatementService {
                         "Account not found", "ERR_ACC_NOT_FOUND", null));
 
         // Ownership check
-        boolean isAdmin = hasRole(caller, "ADMIN");
+        boolean isAdmin = hasRole(caller, "BANK_ADMINISTRATOR");
         if (!isAdmin && !caller.getCustomerId().equals(account.getCustomer().getCustomerId())) {
             throw new PermissionDeniedException("ACCOUNT_ACCESS");
         }
@@ -94,7 +94,7 @@ public class MonthlyStatementService {
                 .map(ExportCacheEntity::getPdfData)
                 .orElseGet(() -> {
                         byte[] pdf = buildAndCachePdf(account, yearMonth, currentMonth, cacheKey);
-                        RoleName actorRole = hasRole(caller, "ADMIN") ? RoleName.ADMIN : RoleName.CUSTOMER;
+                        RoleName actorRole = hasRole(caller, "BANK_ADMINISTRATOR") ? RoleName.BANK_ADMINISTRATOR : RoleName.RETAIL_CUSTOMER;
                         auditService.log(AuditEventType.STATEMENT_DOWNLOADED,
                             "statements",
                             actorRole,

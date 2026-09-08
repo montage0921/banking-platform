@@ -41,6 +41,6 @@ public class UserPrincipal {
         return permissions != null && permissions.contains(permission);
     }
 
-    public boolean isAdmin() { return roles != null && roles.contains("ADMIN"); }
-    public boolean isCustomer() { return roles != null && roles.contains("CUSTOMER"); }
+    public boolean isAdmin() { return roles != null && roles.contains("BANK_ADMINISTRATOR"); }
+    public boolean isCustomer() { return roles != null && roles.contains("RETAIL_CUSTOMER"); }
 }

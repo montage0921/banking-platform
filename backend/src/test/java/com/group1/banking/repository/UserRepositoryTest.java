@@ -35,7 +35,7 @@ class UserRepositoryTest {
         User user = new User();
         user.setUsername("test@example.com");
         user.setPasswordHash("$2a$10$hashedpassword");
-        user.setRoles(new ArrayList<>(List.of(RoleName.CUSTOMER)));
+        user.setRoles(new ArrayList<>(List.of(RoleName.RETAIL_CUSTOMER)));
         user.setActive(true);
         user.setCustomerId(42L);
         savedUser = userRepository.save(user);
@@ -110,7 +110,7 @@ class UserRepositoryTest {
     void user_roles_shouldBePersisted() {
         Optional<User> found = userRepository.findById(savedUser.getUserId());
         assertThat(found).isPresent();
-        assertThat(found.get().getRoles()).containsExactly(RoleName.CUSTOMER);
+        assertThat(found.get().getRoles()).containsExactly(RoleName.RETAIL_CUSTOMER);
     }
 
     @Test
@@ -118,13 +118,13 @@ class UserRepositoryTest {
         User admin = new User();
         admin.setUsername("admin@example.com");
         admin.setPasswordHash("$2a$10$adminpasswordhash");
-        admin.setRoles(new ArrayList<>(List.of(RoleName.ADMIN)));
+        admin.setRoles(new ArrayList<>(List.of(RoleName.BANK_ADMINISTRATOR)));
         admin.setActive(true);
         User saved = userRepository.save(admin);
 
         Optional<User> found = userRepository.findById(saved.getUserId());
         assertThat(found).isPresent();
-        assertThat(found.get().getRoles()).containsExactly(RoleName.ADMIN);
+        assertThat(found.get().getRoles()).containsExactly(RoleName.BANK_ADMINISTRATOR);
     }
 
     @Test

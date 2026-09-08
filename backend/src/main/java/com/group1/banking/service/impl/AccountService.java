@@ -509,7 +509,7 @@ public class AccountService {
 
     private boolean isAdmin(User user) {
         return user.getRoles().stream()
-                .anyMatch(r -> r.name().equalsIgnoreCase("ADMIN") || r.name().equalsIgnoreCase("ROLE_ADMIN"));
+                .anyMatch(r -> r.name().equalsIgnoreCase("BANK_ADMINISTRATOR") || r.name().equalsIgnoreCase("ROLE_BANK_ADMINISTRATOR"));
     }
 
     private void assertAdmin(User user) {
@@ -519,7 +519,7 @@ public class AccountService {
     }
 
     private RoleName primaryRole(User user) {
-        return user.getRoles().stream().findFirst().orElse(RoleName.CUSTOMER);
+        return user.getRoles().stream().findFirst().orElse(RoleName.RETAIL_CUSTOMER);
     }
 
     private void checkAuthorization(User user, Long customerId) {

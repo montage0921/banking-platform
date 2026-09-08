@@ -76,8 +76,8 @@ public class StandingOrderService {
                    "ERR_END_DATE_BEFORE_START", "endDate");
        }
  
-        RoleName actor = resolveRole(caller).equalsIgnoreCase("ADMIN")
-                ? RoleName.ADMIN : RoleName.CUSTOMER;
+        RoleName actor = resolveRole(caller).equalsIgnoreCase("BANK_ADMINISTRATOR")
+                ? RoleName.BANK_ADMINISTRATOR : RoleName.RETAIL_CUSTOMER;
 
         String details = accountId + "->" + req.getPayeeAccount();
 
@@ -89,7 +89,7 @@ public class StandingOrderService {
             try {
                 auditService.log(AuditEventType.STANDING_ORDER_CREATE,
                         "standing-orders",
-                        resolveRole(caller).equalsIgnoreCase("ADMIN") ? RoleName.ADMIN : RoleName.CUSTOMER,
+                        resolveRole(caller).equalsIgnoreCase("BANK_ADMINISTRATOR") ? RoleName.BANK_ADMINISTRATOR : RoleName.RETAIL_CUSTOMER,
                         caller.getUserId().toString(),
                         "STANDING_ORDER",
                         null,
@@ -185,8 +185,8 @@ public class StandingOrderService {
                 .map(mapper::toResponse)
                 .collect(Collectors.toList());
  
-        RoleName actor2 = resolveRole(caller).equalsIgnoreCase("ADMIN")
-                ? RoleName.ADMIN : RoleName.CUSTOMER;
+        RoleName actor2 = resolveRole(caller).equalsIgnoreCase("BANK_ADMINISTRATOR")
+            ? RoleName.BANK_ADMINISTRATOR : RoleName.RETAIL_CUSTOMER;
         auditService.log(AuditEventType.STANDING_ORDER_LIST,
                 "standing-orders",
                 actor2,
@@ -228,8 +228,8 @@ public class StandingOrderService {
         entity.setStatus(StandingOrderStatus.CANCELLED);
         standingOrderRepository.save(entity);
  
-        RoleName actor3 = resolveRole(caller).equalsIgnoreCase("ADMIN")
-                ? RoleName.ADMIN : RoleName.CUSTOMER;
+        RoleName actor3 = resolveRole(caller).equalsIgnoreCase("BANK_ADMINISTRATOR")
+            ? RoleName.BANK_ADMINISTRATOR : RoleName.RETAIL_CUSTOMER;
         auditService.log(AuditEventType.STANDING_ORDER_CANCEL,
                 "standing-orders",
                 actor3,

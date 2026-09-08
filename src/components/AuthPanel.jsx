@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
-import { emptyAuthState } from '../types';
+import { useEffect, useState } from "react";
+import { emptyAuthState } from "../types";
 
-const STORAGE_KEY = 'banking-auth-state';
+const STORAGE_KEY = "banking-auth-state";
 
 function readInitialState() {
   const saved = window.localStorage.getItem(STORAGE_KEY);
@@ -34,14 +34,20 @@ export function AuthPanel() {
         <h3>Auth Debug Panel</h3>
       </div>
       <p className="auth-note">
-        The current backend uses a temporary auth scaffold. These values are sent as headers alongside the Bearer token.
+        The current backend uses a temporary auth scaffold. These values are
+        sent as headers alongside the Bearer token.
       </p>
       <div className="field">
         <label htmlFor="token">Bearer token</label>
         <input
           id="token"
           value={formState.token}
-          onChange={(event) => setFormState((current) => ({ ...current, token: event.target.value }))}
+          onChange={(event) =>
+            setFormState((current) => ({
+              ...current,
+              token: event.target.value,
+            }))
+          }
         />
       </div>
       <div className="field">
@@ -49,8 +55,13 @@ export function AuthPanel() {
         <input
           id="roles"
           value={formState.roles}
-          onChange={(event) => setFormState((current) => ({ ...current, roles: event.target.value }))}
-          placeholder="CUSTOMER or ADMIN"
+          onChange={(event) =>
+            setFormState((current) => ({
+              ...current,
+              roles: event.target.value,
+            }))
+          }
+          placeholder="RETAIL_CUSTOMER or BANK_ADMINISTRATOR"
         />
       </div>
       <div className="field">
@@ -58,7 +69,12 @@ export function AuthPanel() {
         <input
           id="customerId"
           value={formState.customerId}
-          onChange={(event) => setFormState((current) => ({ ...current, customerId: event.target.value }))}
+          onChange={(event) =>
+            setFormState((current) => ({
+              ...current,
+              customerId: event.target.value,
+            }))
+          }
         />
       </div>
     </section>
