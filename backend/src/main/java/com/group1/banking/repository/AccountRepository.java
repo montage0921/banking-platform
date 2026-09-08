@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.group1.banking.entity.Account;
 import com.group1.banking.entity.AccountStatus;
@@ -25,10 +26,11 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
      *  match its catalogue entry. */
     List<Account> findAllByCustomerCustomerId(Long customerId);
 
-    /** Highest account id currently stored, or 0 when the table is empty. Used to allocate a
-     *  run of new ids without re-reading a row count that has not been flushed yet. */
-    @Query("select coalesce(max(a.accountId), 0) from Account a")
-    long findMaxAccountId();
+    /** Highest account id strictly below {@code exclusiveUpperBound}, or 0 when there is none.
+     *  Used to allocate a run of new ids without re-reading a row count that has not been
+     *  flushed yet, while staying out of an id band another tool owns. */
+    @Query("select coalesce(max(a.accountId), 0) from Account a where a.accountId < :exclusiveUpperBound")
+    long findMaxAccountIdBelow(@Param("exclusiveUpperBound") long exclusiveUpperBound);
 
     boolean existsByCustomerCustomerIdAndDeletedAtIsNullAndStatus(Long customerId, AccountStatus status);
 

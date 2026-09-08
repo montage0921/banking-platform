@@ -61,6 +61,13 @@ public class PersonaSeeder {
      * a production-shaped environment, so this value can never reach one. Documented rather
      * than hidden, because a QA tester needs to be able to log in as a persona.
      */
+    /**
+     * Start of the account/customer id band owned by {@code backend/scripts/generate_seed.py},
+     * which allocates bulk demo rows from 900001 upward using fixed ids. Personas must stay
+     * below it so the two seeders never contend for an id, in either order.
+     */
+    static final long BULK_DEMO_ID_BASE = 900_000L;
+
     public static final String SEED_PASSWORD = "SeedPersona!2026";
 
     private final PersonaCatalogue catalogue;
@@ -156,9 +163,13 @@ public class PersonaSeeder {
         // the seeder collision-free without changing the scheme AccountService uses - once
         // seeded rows are committed, its count()+1000 still lands clear of them. The real fix
         // is a proper identity strategy on the account table; that is out of scope here.
+        // Ignore anything at or above BULK_DEMO_ID_BASE when finding the high-water mark.
+        // Without that bound, running backend/scripts/generate_seed.py first would push
+        // persona accounts to 900301+, inside the band that script allocates from - and the
+        // next regeneration with a larger --customers would then collide with them.
         long nextAccountId = Math.max(
                 AccountIdentifiers.nextAccountId(accountRepository.count()),
-                accountRepository.findMaxAccountId() + 1);
+                accountRepository.findMaxAccountIdBelow(BULK_DEMO_ID_BASE) + 1);
 
         for (SeedAccount seed : persona.getAccounts()) {
             Account account = new Account();
