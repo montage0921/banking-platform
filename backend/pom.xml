@@ -154,6 +154,29 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- Flyway owns the core banking schema. Three artifacts are needed on
+             Spring Boot 4:
+               spring-boot-flyway         - the auto-configuration module. Boot 4 split
+                                            auto-configurations into per-technology
+                                            modules (same reason spring-boot-h2console
+                                            is its own artifact). Without it Flyway is on
+                                            the classpath but never runs.
+               flyway-core                - the migration engine.
+               flyway-database-postgresql - separate module from Flyway 10 onward,
+                                            required for PostgreSQL. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-flyway</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+        </dependency>
+
         <!-- Savings Insight Chatbot (RAG) -->
         <!-- Groq is OpenAI-API compatible; Spring AI reuses the OpenAI client with a
              custom base-url (spring.ai.openai.base-url=https://api.groq.com/openai/v1). -->
