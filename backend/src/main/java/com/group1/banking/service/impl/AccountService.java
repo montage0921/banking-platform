@@ -150,7 +150,6 @@ public class AccountService {
         accountRepository.save(account);
 
         accountControlAuditService.logEvent(
-<<<<<<< HEAD
             account.getAccountId(),
             user.getUserId().toString(),
             primaryRole(user).name(),
@@ -179,16 +178,6 @@ public class AccountService {
                     "reason=" + request.reason()
                             + (request.notes() != null ? "; notes=" + request.notes() : ""));
         } catch (Exception ignored) {}
-=======
-                account.getAccountId(),
-                user.getUserId().toString(),
-                primaryRole(user).toString(),
-                AccountControlActionType.FREEZE,
-                previousStatus,
-                AccountStatus.FROZEN,
-                request.reason(),
-                request.notes());
->>>>>>> feature/event-logging
 
         return new AccountControlActionResponse(
                 account.getAccountId(),
@@ -223,7 +212,6 @@ public class AccountService {
         accountRepository.save(account);
 
         accountControlAuditService.logEvent(
-<<<<<<< HEAD
             account.getAccountId(),
             user.getUserId().toString(),
             primaryRole(user).name(),
@@ -245,16 +233,7 @@ public class AccountService {
                     AuditOutcome.SUCCESS,
                     "reason=" + reason + (notes != null ? "; notes=" + notes : ""));
         } catch (Exception ignored) {}
-=======
-                account.getAccountId(),
-                user.getUserId().toString(),
-                primaryRole(user).toString(),
-                AccountControlActionType.UNFREEZE,
-                previousStatus,
-                AccountStatus.ACTIVE,
-                reason,
-                notes);
->>>>>>> feature/event-logging
+
 
         return new AccountControlActionResponse(
                 account.getAccountId(),
@@ -343,18 +322,6 @@ public class AccountService {
         account.setStatus(AccountStatus.CLOSED);
         account.setDeletedAt(Instant.now());
         accountRepository.save(account);
-<<<<<<< HEAD
-        try {
-            auditService.log(AuditEventType.ACCOUNT_DELETED,
-                    "accounts",
-                    primaryRole(user),
-                    user.getUserId().toString(),
-                    "ACCOUNT",
-                    String.valueOf(accountId),
-                    AuditOutcome.SUCCESS,
-                    null);
-        } catch (Exception ignored) {}
-=======
         auditService.log(AuditEventType.ACCOUNT_DELETED,
             "accounts",
             primaryRole(user),
@@ -363,7 +330,6 @@ public class AccountService {
             String.valueOf(accountId),
             AuditOutcome.SUCCESS,
             account.getAccountType() + " account deleted with account ID: " + accountId);
->>>>>>> feature/event-logging
     }
 
     private void validateCreateRequest(CreateAccountRequest request, Customer customer) {
@@ -585,11 +551,7 @@ public class AccountService {
     }
 
     private RoleName primaryRole(User user) {
-<<<<<<< HEAD
         return user.getRoles().stream().findFirst().orElse(RoleName.RETAIL_CUSTOMER);
-=======
-        return user.getRoles().stream().findFirst().orElse(RoleName.CUSTOMER);
->>>>>>> feature/event-logging
     }
 
     private void checkAuthorization(User user, Long customerId) {
