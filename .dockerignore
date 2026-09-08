@@ -6,3 +6,7 @@ dockerfile
 *.log*
 .env*
 coverage/
+
+# Java build output and local H2 data - never belong in an image context.
+**/target/
+backend/data/
