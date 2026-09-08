@@ -8,6 +8,16 @@
 
 **Input**: User description: "As anyone building or testing a feature, I want a consistent set of seeded customer personas and sample data available across dev, QA, and demos, so that scenarios are reproducible and every feature is validated against the same known baseline."
 
+## Clarifications
+
+### Session 2026-09-07
+
+- Q: How should the platform decide whether seeding is allowed to run in a given environment? → A: Opt-in flag **and** a hard refusal if the environment identifies as production, whichever triggers first (defense in depth).
+- Q: What should identify a seeded persona so that tests, the catalogue, and the seeding process all refer to the same customer? → A: A natural business key — each persona owns a reserved, recognizable login/email unique by convention; identifiers are generated normally and personas are looked up by that key.
+- Q: When the reset action is invoked in an environment more than one person is using, what should happen to work already in progress there? → A: Reset is scoped per persona — a tester resets only the personas their scenario touches, leaving other personas, and other people's in-flight work, untouched.
+- Q: Where should the expected outcome for each persona live — the value a test asserts against? → A: A single catalogue artifact that is the source of truth. Tests read expected outcomes from it, and the same artifact is directly readable by a person. It is validated, not generated — there is no doc-generation pipeline and no second copy.
+- Q: When someone changes the baseline dataset, how should the four features find out their expectations may no longer hold? → A: No separate mechanism. The catalogue validation already fails at the moment of the change, and that failure is the notification — no baseline version number, change log, or ownership sign-off.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - The primary personas exist and are usable (Priority: P1)
@@ -23,7 +33,7 @@ A developer, tester, or presenter opens a freshly prepared non-production enviro
 1. **Given** a clean non-production environment, **When** the baseline seed is applied, **Then** a salaried-customer persona exists with recurring income and regular spending activity covering at least the minimum history window that risk scoring requires
 2. **Given** a clean non-production environment, **When** the baseline seed is applied, **Then** a goal-saving persona exists with at least one active goal that has a near-term target date and partial progress toward it
 3. **Given** a clean non-production environment, **When** the baseline seed is applied, **Then** an operations-user persona exists with privileges sufficient to place and lift account restrictions
-4. **Given** the seeded personas, **When** someone needs to pick one for a scenario, **Then** each persona is identifiable by a stable, human-readable name that does not change between seed runs
+4. **Given** the seeded personas, **When** someone needs to pick one for a scenario, **Then** each persona is identifiable by its reserved login identity, which is recognizable on sight and does not change between seed runs or between environments
 
 ---
 
@@ -58,6 +68,7 @@ A tester runs a scenario on Monday and again on Friday, and a presenter runs the
 3. **Given** an already-seeded environment, **When** the baseline is applied again without a reset, **Then** no persona, account, transaction, or goal is duplicated and no existing data is overwritten
 4. **Given** the baseline seed, **When** it is applied to two separate clean environments on different days, **Then** both produce personas with identical balances, transaction sets, goal progress, and risk outcomes
 5. **Given** a persona seeded several months ago in a long-lived environment, **When** its risk score is requested today, **Then** it still falls on the same side of the minimum-history threshold as its catalogue entry documents
+6. **Given** a shared environment where two people are working on different personas, **When** one of them resets only the persona their scenario touches, **Then** the other person's persona and in-flight work are unaffected
 
 ---
 
@@ -74,12 +85,15 @@ Someone working on the Goal Tracker uses the same seeded customers as someone wo
 1. **Given** a seeded persona, **When** the same customer is viewed through the Chatbot, Goal Tracker, Admin Control, and Risk Scoring features, **Then** all four reflect the same underlying account, transaction, and goal data
 2. **Given** the shared dataset, **When** the four features' test setups are inspected, **Then** none of them defines its own duplicate persona for a scenario the shared dataset already covers
 3. **Given** a change to a seeded persona's data, **When** the four features are exercised again, **Then** all four reflect the change consistently, with no feature reading a stale private copy
+4. **Given** a seeded persona whose data has been changed without its catalogue entry being updated, **When** the catalogue is validated against the seeded data, **Then** the mismatch is reported as a failure rather than passing silently
 
 ---
 
 ### Edge Cases
 
-- **A test run mutates seeded data.** A scenario that transfers money, completes a goal, or restricts an account leaves the persona in a changed state. Re-applying the baseline will not undo this — only the explicit reset will — so any scenario that requires a clean starting state must name the reset as its first step.
+- **A test run mutates seeded data.** A scenario that transfers money, completes a goal, or restricts an account leaves the persona in a changed state. Re-applying the baseline will not undo this — only the explicit reset will — so any scenario that requires a clean starting state must name the reset, and the personas it covers, as its first step.
+- **A scenario spans two personas.** A transfer between the salaried customer and the goal saver leaves both changed, so resetting only one restores half a scenario. Scenarios that touch more than one persona must reset every persona they touch, and the catalogue must say which personas each scenario involves.
+- **Two people reset overlapping personas at once.** Per-persona scoping removes most collisions but not the case where two scenarios genuinely need the same persona. The catalogue's persona-to-scenario mapping is what lets people see the overlap in advance; the dataset does not arbitrate it.
 - **The passage of real time.** A persona whose activity was anchored to fixed calendar dates would drift past the risk-scoring minimum-history window as months pass, silently flipping a "sufficient data" persona into an insufficient-data one. Relative anchoring (FR-009) prevents this, at the cost that literal seeded timestamps differ between environments seeded on different days.
 - **A long-lived environment reset months after it was first seeded.** The reset re-anchors dates to the moment of the reset, so personas return to their documented classification rather than to their original literal dates. Any external record that captured literal timestamps from the earlier seeding becomes stale.
 - **Partial seeding.** If seeding is interrupted, the environment must not be left with some personas present and others missing in a way that reads as a legitimate state. The result must be either a complete baseline or an obvious failure.
@@ -93,33 +107,41 @@ Someone working on the Goal Tracker uses the same seeded customers as someone wo
 ### Functional Requirements
 
 - **FR-001**: The baseline dataset MUST define a named set of personas that includes, at minimum: a salaried customer with regular activity, a customer actively saving toward a near-term goal, an operations user who manages account restrictions, and a customer with deliberately sparse data.
-- **FR-002**: Each persona MUST be identifiable by a stable, human-readable name and a stable identifier that do not change between seed runs or between environments.
-- **FR-003**: The salaried-customer persona MUST have recurring income and regular spending activity spanning at least the minimum history window that risk scoring requires to produce a score.
-- **FR-004**: The goal-saving persona MUST have at least one active savings goal with a near-term target date and partial, non-boundary progress toward it.
-- **FR-005**: The operations-user persona MUST hold privileges sufficient to place and lift account restrictions on at least one other seeded persona.
-- **FR-006**: The sparse persona MUST have transaction history below the configured minimum-history threshold by a clear margin, and insufficient goal and spending history to answer Chatbot questions that require it, so that both the Chatbot fallback response and the risk-scoring insufficient-data status are reachable.
-- **FR-007**: All four features (Chatbot, Goal Tracker, Admin Control, Risk Scoring) MUST draw their persona-based scenarios from this single shared dataset; no feature may maintain a private duplicate of a persona the shared dataset already covers.
-- **FR-008**: Applying the baseline to a clean environment MUST produce identical persona data every time — same balances, same transaction sets, same goal progress, same resulting risk outcomes.
-- **FR-009**: Seeded activity dates MUST be generated relative to the moment of seeding rather than as fixed calendar dates, so that each persona sits in the same position relative to time-sensitive thresholds — notably the risk-scoring minimum-history window and the goal-saver's near-term target date — no matter when the seed is applied.
-- **FR-010**: Because seeded dates shift with the seeding moment, scenarios and expected outcomes MUST be expressed in terms of observable results and relative positions ("has more than the minimum history", "is roughly two-thirds toward the goal") and MUST NOT assert on literal timestamps.
-- **FR-011**: Applying the baseline to an already-seeded environment MUST fill in only what is missing: it MUST NOT create duplicate personas, accounts, transactions, or goals, and MUST NOT overwrite data that is already present.
-- **FR-012**: A separate, explicitly invoked reset action MUST restore every persona to its documented starting state, discarding changes made by previous runs. It MUST be documented as the prerequisite step for any QA run or demo that requires a guaranteed baseline, and MUST NOT run implicitly on environment startup.
-- **FR-013**: The dataset MUST be accompanied by a catalogue that lists each persona, the scenarios it is intended to support, and the expected outcome for that persona in each of the four features.
-- **FR-014**: Personas MUST be assigned roles from the roles the platform currently recognizes. Where a persona's intended role has no current platform equivalent, the intended role MUST be recorded in the catalogue as provisional, so the mapping can be completed when the role-definition story lands without redefining the personas.
-- **FR-015**: Seeded data MUST be fictional and MUST NOT contain, or be derived from, real customer information.
-- **FR-016**: Persona amounts, dates, and progress values MUST be chosen to sit clear of thresholds and rounding boundaries, so each persona's expected outcome in each feature is unambiguous.
-- **FR-017**: The baseline MUST apply either completely or not at all; a partially applied baseline MUST be reported as a failure rather than left in place as an apparently valid state.
+- **FR-002**: Each persona MUST be identifiable by a reserved, recognizable login identity that is unique by convention and does not change between seed runs or between environments. System-assigned identifiers MUST be generated normally and MUST NOT be pinned to fixed values; everything that needs to find a persona — tests, the catalogue, the seeding process, and demo scripts — MUST resolve it through this login identity.
+- **FR-003**: The reserved login identities MUST follow a documented convention that makes a seeded persona recognizable on sight and distinguishable from any non-seeded account, so that seeded records can be identified in a shared environment without consulting the catalogue.
+- **FR-004**: The salaried-customer persona MUST have recurring income and regular spending activity spanning at least the minimum history window that risk scoring requires to produce a score.
+- **FR-005**: The goal-saving persona MUST have at least one active savings goal with a near-term target date and partial, non-boundary progress toward it.
+- **FR-006**: The operations-user persona MUST hold privileges sufficient to place and lift account restrictions on at least one other seeded persona.
+- **FR-007**: The sparse persona MUST have transaction history below the configured minimum-history threshold by a clear margin, and insufficient goal and spending history to answer Chatbot questions that require it, so that both the Chatbot fallback response and the risk-scoring insufficient-data status are reachable.
+- **FR-008**: All four features (Chatbot, Goal Tracker, Admin Control, Risk Scoring) MUST draw their persona-based scenarios from this single shared dataset; no feature may maintain a private duplicate of a persona the shared dataset already covers.
+- **FR-009**: Applying the baseline to a clean environment MUST produce identical persona data every time — same balances, same transaction sets, same goal progress, same resulting risk outcomes.
+- **FR-010**: Seeded activity dates MUST be generated relative to the moment of seeding rather than as fixed calendar dates, so that each persona sits in the same position relative to time-sensitive thresholds — notably the risk-scoring minimum-history window and the goal-saver's near-term target date — no matter when the seed is applied.
+- **FR-011**: Because seeded dates shift with the seeding moment, scenarios and expected outcomes MUST be expressed in terms of observable results and relative positions ("has more than the minimum history", "is roughly two-thirds toward the goal") and MUST NOT assert on literal timestamps.
+- **FR-012**: Applying the baseline to an already-seeded environment MUST fill in only what is missing: it MUST NOT create duplicate personas, accounts, transactions, or goals, and MUST NOT overwrite data that is already present.
+- **FR-013**: A separate, explicitly invoked reset action MUST restore personas to their documented starting state, discarding changes made by previous runs. It MUST be documented as the prerequisite step for any QA run or demo that requires a guaranteed baseline, and MUST NOT run implicitly on environment startup.
+- **FR-014**: Reset MUST be scopeable to a named subset of personas, so that a person working in a shared environment can restore only the personas their scenario touches. Resetting one persona MUST leave every other persona's data — and any in-flight work against it — untouched. Resetting the whole baseline MUST be expressible as resetting every persona, with no separate behaviour of its own.
+- **FR-015**: Because a persona is the unit of reset, each persona's accounts, transactions, and goals MUST belong to exactly one persona, with no data shared between two personas that would make one persona's reset disturb another's state.
+- **FR-016**: The dataset MUST be accompanied by a single catalogue artifact that lists each persona, its reserved login identity, the scenarios it is intended to support, which personas each scenario touches, and the expected outcome for that persona in each of the four features.
+- **FR-017**: The catalogue MUST be the single source of truth for expected outcomes: tests MUST read expected values from it rather than restating them, so an expectation cannot drift from the catalogue without failing a test.
+- **FR-018**: The catalogue MUST be directly readable by a person without any generation or transformation step. There MUST NOT be a second, derived copy of it — one artifact serves both the tests and the reader.
+- **FR-019**: The catalogue MUST be validated against the seeded data, so that a persona whose data no longer matches its catalogue entry is reported as a failure rather than left as silent documentation drift.
+- **FR-020**: Catalogue validation MUST run wherever the four features' tests run, so that a change to a persona which invalidates any feature's expectation fails at the moment of the change. This validation is the only required notification mechanism: the dataset MUST NOT carry a baseline version number, a change log, or a per-persona sign-off process.
+- **FR-021**: Personas MUST be assigned roles from the roles the platform currently recognizes. Where a persona's intended role has no current platform equivalent, the intended role MUST be recorded in the catalogue as provisional, so the mapping can be completed when the role-definition story lands without redefining the personas.
+- **FR-022**: Seeded data MUST be fictional and MUST NOT contain, or be derived from, real customer information.
+- **FR-023**: Persona amounts, dates, and progress values MUST be chosen to sit clear of thresholds and rounding boundaries, so each persona's expected outcome in each feature is unambiguous.
+- **FR-024**: The baseline MUST apply either completely or not at all; a partially applied baseline MUST be reported as a failure rather than left in place as an apparently valid state.
 
 ### Security & Configuration Requirements *(mandatory for endpoint/proxy/auth changes)*
 
-- **SCR-001**: Seeding MUST be restricted to non-production environments and MUST be inert in a production configuration.
-- **SCR-002**: Seeded credentials MUST be usable only in non-production environments and MUST NOT grant any access beyond what the persona's role legitimately carries.
-- **SCR-003**: The operations-user persona's elevated privileges MUST be scoped to the seeded environment and MUST NOT require weakening any existing endpoint authorization rule to make the persona work.
+- **SCR-001**: Seeding MUST be gated by two independent guards, either of which is sufficient to prevent it: (a) seeding runs only where a configuration setting explicitly enables it, defaulting to disabled in every environment including a fresh developer machine; and (b) seeding refuses to run where the environment identifies itself as production, regardless of that setting.
+- **SCR-002**: A refusal by either guard MUST be reported clearly enough that an operator can tell seeding was deliberately prevented, rather than silently producing an environment with no personas that reads as a seeding bug.
+- **SCR-003**: Seeded credentials MUST be usable only in non-production environments and MUST NOT grant any access beyond what the persona's role legitimately carries.
+- **SCR-004**: The operations-user persona's elevated privileges MUST be scoped to the seeded environment and MUST NOT require weakening any existing endpoint authorization rule to make the persona work.
 
 ### Key Entities *(include if feature involves data)*
 
 - **Persona**: A named, reusable test identity representing one primary user type. Carries an intended purpose, a role assignment (with a provisional target role where applicable), and the set of scenarios it is meant to support.
-- **Persona Catalogue**: The human-readable record of the personas — who each one is, what they are for, and what each of the four features is expected to report for them. The reference a tester or presenter consults to pick the right persona.
+- **Persona Catalogue**: The single artifact recording who each persona is, its reserved login identity, what scenarios it supports, which personas each scenario touches, and what each of the four features is expected to report for it. It serves two audiences from one copy: a tester or presenter reads it directly to pick the right persona, and the tests read their expected values from it. Validated against the seeded data rather than generated from it.
 - **Seeded Customer Profile**: The customer identity behind a persona — name, contact details, and role — all fictional.
 - **Seeded Account**: An account belonging to a persona, with a defined starting balance and, where relevant, a restriction state the operations user can act on.
 - **Seeded Transaction Set**: The activity history attached to a persona's accounts, shaped to place that persona deliberately above or below the thresholds that matter to Risk Scoring and the Chatbot.
@@ -133,10 +155,13 @@ Someone working on the Goal Tracker uses the same seeded customers as someone wo
 - **SC-002**: All four features can be demonstrated end-to-end using only seeded personas, with no ad-hoc test data created during the demo.
 - **SC-003**: Running the same scenario against the same persona three times consecutively produces identical observable results on all three runs.
 - **SC-004**: The sparse persona triggers the Chatbot fallback response and the risk-scoring insufficient-data status on 100% of attempts.
-- **SC-005**: Zero feature-specific duplicate personas remain for scenarios the shared dataset covers.
+- **SC-005**: Zero feature-specific duplicate personas remain for scenarios the shared dataset covers, and zero expected outcomes are restated outside the catalogue.
 - **SC-006**: A tester unfamiliar with the dataset can identify the correct persona for a given scenario in under 1 minute using the catalogue alone.
 - **SC-007**: The same scenario run on two independently prepared environments produces the same result, with no environment-specific setup notes required to reconcile them.
 - **SC-008**: Six months after the dataset is defined, every persona still produces the outcome its catalogue entry documents, without anyone having adjusted the data for the passage of time.
+- **SC-009**: A change to a seeded persona that invalidates any feature's expectation is reported before that change is merged, not discovered later as an unrelated feature's failing test.
+- **SC-010**: A person working in a shared environment can restore the personas their scenario needs without disturbing anyone else's in-flight work, on 100% of attempts.
+- **SC-011**: Seeding attempted against a production-configured environment is refused on 100% of attempts, and the refusal is distinguishable from a seeding failure.
 
 ## Assumptions
 
@@ -155,6 +180,6 @@ Two open questions were resolved by default rather than by decision, because the
 
 ## Dependencies
 
-- **Role definition story** (Bank Administrator, Risk Analyst, Compliance/Audit Observer, Retail Customer): persona role assignment depends on it. If it has not landed when this work starts, personas are seeded against the two existing roles and the target mapping is recorded as provisional (FR-014).
+- **Role definition story** (Bank Administrator, Risk Analyst, Compliance/Audit Observer, Retail Customer): persona role assignment depends on it. If it has not landed when this work starts, personas are seeded against the two existing roles and the target mapping is recorded as provisional (FR-021).
 - **CFG-06 — shared data contracts** for the account, transaction, and user/profile services. Explicitly out of scope here: this feature defines personas and their dataset, not the contracts those services expose.
 - **Existing risk-scoring minimum-history configuration**: determines where the sparse persona must sit relative to the threshold.

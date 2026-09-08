@@ -31,10 +31,14 @@
 
 ## Notes
 
-- **Iteration 1 (2026-09-07)**: 15/16 passing. Two [NEEDS CLARIFICATION] markers remained, both on the reproducibility guarantee that is this feature's reason for existing: date anchoring (FR-009) and re-seed semantics (FR-010). Raised with the user as Q1/Q2.
-- **Iteration 2 (2026-09-07)**: 16/16 passing. Both markers resolved by default rather than by user decision, so the spec could be completed:
-  - **Date anchoring** → relative to the moment of seeding (FR-009), with scenarios asserting on outcomes rather than literal timestamps (FR-010). Fixed calendar dates were rejected because risk scoring derives its sufficiency window from the current date, so fixed dates would eventually reclassify the salaried persona as insufficient-data on their own.
-  - **Re-seed semantics** → fill in what is missing (FR-011), with a separate explicit reset action for restoring the baseline (FR-012). Restore-on-every-apply was rejected because it would silently destroy in-progress local work on each environment start.
-  - Both decisions, their costs, and their rejected alternatives are recorded at the top of the spec's Assumptions section.
-- **Carried into planning**: these two are defaults, not stakeholder decisions. Confirm or override them in `/speckit-clarify` before `/speckit-plan` commits work to either. Overriding the re-seed decision changes US3 scenario 2 and FR-011/FR-012; overriding date anchoring changes FR-009/FR-010 and SC-008.
-- **Not verifiable from this repository**: the BRD (Section 1) is not held here, so the three primary persona descriptions are taken from the feature request text itself and should be checked against the BRD before planning.
+- **Iteration 1 (2026-09-07, `/speckit-specify`)**: 15/16 passing. Two [NEEDS CLARIFICATION] markers on date anchoring and re-seed semantics.
+- **Iteration 2 (2026-09-07, `/speckit-specify`)**: 16/16 passing. Both markers resolved by default — relative date anchoring, and fill-in-missing plus an explicit reset — and recorded in the spec's Assumptions section with their costs and rejected alternatives.
+- **Iteration 3 (2026-09-07, `/speckit-clarify`)**: 16/16 still passing; no regressions and no state changes. Five clarifications were integrated, none of which introduced a new gap:
+  1. **Environment guard** → opt-in flag plus hard production refusal, defense in depth (SCR-001, SCR-002, SC-011).
+  2. **Persona identity** → reserved login identity as natural business key; generated ids not pinned (FR-002, FR-003).
+  3. **Reset scope** → per persona, so a shared environment tolerates concurrent work (FR-013–FR-015, SC-010).
+  4. **Expected outcomes** → single catalogue artifact serving both tests and readers; validated, not generated (FR-016–FR-019, SC-005).
+  5. **Change notification** → catalogue validation is the only mechanism; no version number, change log, or sign-off (FR-020, SC-009).
+- **Confirmed, not re-litigated**: the two iteration-2 defaults survived clarification. Date anchoring is effectively forced by risk scoring deriving its window from the current date, so it was not spent as a question. The re-seed default was extended rather than overturned — per-persona reset (Q3) refines it.
+- **Not verifiable from this repository**: the BRD (Section 1) is not held here, so the three primary persona descriptions come from the feature request text and should be checked against the BRD before planning.
+- **Deferred to planning**: concrete persona values (how many months of history, exact balances and goal amounts), seeding performance, and the catalogue's file format. These are plan-level choices that the requirements already constrain.
