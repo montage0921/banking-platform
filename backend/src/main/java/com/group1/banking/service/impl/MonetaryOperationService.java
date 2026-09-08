@@ -131,6 +131,7 @@ public class MonetaryOperationService {
 							transactionRepository.save(transaction);
 
 							// Audit: deposit made
+
 							RoleName actorRoleEnum = isAdmin ? RoleName.BANK_ADMINISTRATOR : RoleName.RETAIL_CUSTOMER;
 							auditService.log(AuditEventType.DEPOSIT_MADE,
 								"monetary",
@@ -233,6 +234,7 @@ public class MonetaryOperationService {
 							transactionRepository.save(transaction);
 
 							// Audit: withdrawal made (success)
+
 							RoleName actorRoleEnum = isAdmin ? RoleName.BANK_ADMINISTRATOR : RoleName.RETAIL_CUSTOMER;
 							auditService.log(AuditEventType.WITHDRAWAL_MADE,
 								"monetary",
@@ -373,6 +375,7 @@ public class MonetaryOperationService {
 
 		// Audit: funds transferred
 		RoleName actorRoleEnum = isAdmin ? RoleName.BANK_ADMINISTRATOR : RoleName.RETAIL_CUSTOMER;
+
 		auditService.log(AuditEventType.FUNDS_TRANSFERRED,
 			"transfers",
 			actorRoleEnum,

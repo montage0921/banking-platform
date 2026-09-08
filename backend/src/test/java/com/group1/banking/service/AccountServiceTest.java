@@ -63,6 +63,9 @@ class AccountServiceTest {
     @Mock
     private AccountControlAuditService accountControlAuditService;
 
+    @Mock
+    private AuditService auditService;
+
     @InjectMocks
     private AccountService accountService;
 
@@ -347,6 +350,9 @@ class AccountServiceTest {
 
         assertThat(result).isNotNull();
         verify(accountRepository).save(any(Account.class));
+            verify(auditService).log(eq(AuditEventType.INTEREST_RATE_UPDATED), eq("accounts"),
+                    eq(RoleName.RETAIL_CUSTOMER), eq(userId.toString()), eq("ACCOUNT"), eq("1001"),
+                    eq(AuditOutcome.SUCCESS), anyString());
     }
 
     @Test
@@ -401,6 +407,9 @@ class AccountServiceTest {
         accountService.deleteAccount(1001L);
 
         verify(accountRepository).save(argThat(a -> a.getStatus() == AccountStatus.CLOSED));
+            verify(auditService).log(eq(AuditEventType.ACCOUNT_DELETED), eq("accounts"),
+                    eq(RoleName.RETAIL_CUSTOMER), eq(userId.toString()), eq("ACCOUNT"), eq("1001"),
+                    eq(AuditOutcome.SUCCESS), anyString());
     }
 
     @Test
@@ -411,6 +420,9 @@ class AccountServiceTest {
 
         assertThatThrownBy(() -> accountService.deleteAccount(1001L))
                 .isInstanceOf(ConflictException.class);
+        verify(auditService).log(eq(AuditEventType.ACCOUNT_DELETED), eq("accounts"),
+            eq(RoleName.RETAIL_CUSTOMER), eq(userId.toString()), eq("ACCOUNT"), eq("1001"),
+            eq(AuditOutcome.DENIED), contains("non-zero balance"));
     }
 
     @Test
@@ -468,6 +480,9 @@ class AccountServiceTest {
 
         assertThat(result).containsKey("message");
         verify(accountRepository).save(argThat(a -> a.getStatus() == AccountStatus.CLOSED));
+        verify(auditService, times(1)).log(eq(AuditEventType.ACCOUNT_DELETED), eq("accounts"),
+            eq(RoleName.RETAIL_CUSTOMER), eq(userId.toString()), eq("ACCOUNT"), eq("1001"),
+            eq(AuditOutcome.SUCCESS), contains("RRSP account closed"));
     }
 
     @Test
@@ -506,6 +521,9 @@ class AccountServiceTest {
 
         assertThatThrownBy(() -> accountService.closeRrspAccount(1001L))
                 .isInstanceOf(BadRequestException.class);
+        verify(auditService).log(eq(AuditEventType.ACCOUNT_DELETED), eq("accounts"),
+            eq(RoleName.RETAIL_CUSTOMER), eq(userId.toString()), eq("ACCOUNT"), eq("1001"),
+            eq(AuditOutcome.DENIED), contains("RRSP account closure denied"));
     }
 
     @Test

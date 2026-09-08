@@ -76,6 +76,7 @@ public class StandingOrderService {
                    "ERR_END_DATE_BEFORE_START", "endDate");
        }
  
+
         RoleName actor = resolveRole(caller).equalsIgnoreCase("BANK_ADMINISTRATOR")
                 ? RoleName.BANK_ADMINISTRATOR : RoleName.RETAIL_CUSTOMER;
 

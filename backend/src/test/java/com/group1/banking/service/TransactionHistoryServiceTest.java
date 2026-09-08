@@ -97,6 +97,7 @@ class TransactionHistoryServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.getTransactionCount()).isEqualTo(0);
         assertThat(result.getAccountId()).isEqualTo(1001L);
+        verifyNoInteractions(auditService);
     }
 
     @Test
@@ -224,6 +225,10 @@ class TransactionHistoryServiceTest {
 
         byte[] result = transactionHistoryService.exportPdf(1001L, null, null, customerPrincipal);
         assertThat(result).isEqualTo(cachedPdf);
+        verify(auditService, times(1)).log(eq(AuditEventType.TRANSACTION_HISTORY_EXPORTED),
+                eq("export"), eq(com.group1.banking.enums.RoleName.RETAIL_CUSTOMER),
+                eq(customerPrincipal.getUserId()), eq("ACCOUNT"), eq("1001"),
+                eq(AuditOutcome.SUCCESS), anyString());
     }
 
     @Test
@@ -240,6 +245,10 @@ class TransactionHistoryServiceTest {
         byte[] result = transactionHistoryService.exportPdf(1001L, null, null, customerPrincipal);
         assertThat(result).isEqualTo(generatedPdf);
         verify(exportCacheRepository).save(any(ExportCacheEntity.class));
+        verify(auditService, times(1)).log(eq(AuditEventType.TRANSACTION_HISTORY_EXPORTED),
+                eq("export"), eq(com.group1.banking.enums.RoleName.RETAIL_CUSTOMER),
+                eq(customerPrincipal.getUserId()), eq("ACCOUNT"), eq("1001"),
+                eq(AuditOutcome.SUCCESS), anyString());
     }
 
     @Test

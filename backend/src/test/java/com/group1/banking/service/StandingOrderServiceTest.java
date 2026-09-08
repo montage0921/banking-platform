@@ -256,6 +256,7 @@ class StandingOrderServiceTest {
         StandingOrderListResponse result = standingOrderService.list(1001L, customerPrincipal);
 
         assertThat(result.getStandingOrderCount()).isEqualTo(2);
+            verifyNoInteractions(auditService);
     }
 
     @Test

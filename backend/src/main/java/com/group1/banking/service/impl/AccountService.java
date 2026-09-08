@@ -95,7 +95,7 @@ public class AccountService {
                     "ACCOUNT",
                     String.valueOf(saved.getAccountId()),
                     AuditOutcome.SUCCESS,
-                    null);
+                    saved.getAccountType() + " account created with account ID: " + saved.getAccountId());
         } catch (Exception ignored) {}
 
         return AccountResponse.from(saved);
@@ -150,6 +150,7 @@ public class AccountService {
         accountRepository.save(account);
 
         accountControlAuditService.logEvent(
+<<<<<<< HEAD
             account.getAccountId(),
             user.getUserId().toString(),
             primaryRole(user).name(),
@@ -178,6 +179,16 @@ public class AccountService {
                     "reason=" + request.reason()
                             + (request.notes() != null ? "; notes=" + request.notes() : ""));
         } catch (Exception ignored) {}
+=======
+                account.getAccountId(),
+                user.getUserId().toString(),
+                primaryRole(user).toString(),
+                AccountControlActionType.FREEZE,
+                previousStatus,
+                AccountStatus.FROZEN,
+                request.reason(),
+                request.notes());
+>>>>>>> feature/event-logging
 
         return new AccountControlActionResponse(
                 account.getAccountId(),
@@ -212,6 +223,7 @@ public class AccountService {
         accountRepository.save(account);
 
         accountControlAuditService.logEvent(
+<<<<<<< HEAD
             account.getAccountId(),
             user.getUserId().toString(),
             primaryRole(user).name(),
@@ -233,6 +245,16 @@ public class AccountService {
                     AuditOutcome.SUCCESS,
                     "reason=" + reason + (notes != null ? "; notes=" + notes : ""));
         } catch (Exception ignored) {}
+=======
+                account.getAccountId(),
+                user.getUserId().toString(),
+                primaryRole(user).toString(),
+                AccountControlActionType.UNFREEZE,
+                previousStatus,
+                AccountStatus.ACTIVE,
+                reason,
+                notes);
+>>>>>>> feature/event-logging
 
         return new AccountControlActionResponse(
                 account.getAccountId(),
@@ -272,7 +294,16 @@ public class AccountService {
         checkAuthorization(user, account.getCustomer().getCustomerId());
         validateUpdateRequest(account, request);
         if (request.interestRate() != null) {
+            BigDecimal previousInterestRate = account.getInterestRate();
             account.setInterestRate(scaleInterestRate(request.interestRate()));
+            auditService.log(AuditEventType.INTEREST_RATE_UPDATED,
+                    "accounts",
+                    primaryRole(user),
+                    user.getUserId().toString(),
+                    "ACCOUNT",
+                    String.valueOf(accountId),
+                    AuditOutcome.SUCCESS,
+                    previousInterestRate + " -> " + account.getInterestRate());
         }
         Account saved = accountRepository.save(account);
 
@@ -299,11 +330,20 @@ public class AccountService {
         Account account = loadActiveAccount(accountId);
         checkAuthorization(user, account.getCustomer().getCustomerId());
         if (account.getBalance().compareTo(BigDecimal.ZERO.setScale(2, RoundingMode.UNNECESSARY)) != 0) {
+            auditService.log(AuditEventType.ACCOUNT_DELETED,
+                    "accounts",
+                    primaryRole(user),
+                    user.getUserId().toString(),
+                    "ACCOUNT",
+                    String.valueOf(accountId),
+                    AuditOutcome.DENIED,
+                    "Account deletion denied: non-zero balance " + account.getBalance());
             throw new ConflictException("ACCOUNT_HAS_NON_ZERO_BALANCE", "Account has a non-zero balance", null);
         }
         account.setStatus(AccountStatus.CLOSED);
         account.setDeletedAt(Instant.now());
         accountRepository.save(account);
+<<<<<<< HEAD
         try {
             auditService.log(AuditEventType.ACCOUNT_DELETED,
                     "accounts",
@@ -314,6 +354,16 @@ public class AccountService {
                     AuditOutcome.SUCCESS,
                     null);
         } catch (Exception ignored) {}
+=======
+        auditService.log(AuditEventType.ACCOUNT_DELETED,
+            "accounts",
+            primaryRole(user),
+            user.getUserId().toString(),
+            "ACCOUNT",
+            String.valueOf(accountId),
+            AuditOutcome.SUCCESS,
+            account.getAccountType() + " account deleted with account ID: " + accountId);
+>>>>>>> feature/event-logging
     }
 
     private void validateCreateRequest(CreateAccountRequest request, Customer customer) {
@@ -406,6 +456,14 @@ public class AccountService {
                     "Cannot close RRSP account while an active GIC exists", null);
         }
         if (account.getBalance().compareTo(BigDecimal.ZERO.setScale(2, RoundingMode.UNNECESSARY)) != 0) {
+            auditService.log(AuditEventType.ACCOUNT_DELETED,
+                "accounts",
+                primaryRole(user),
+                user.getUserId().toString(),
+                "ACCOUNT",
+                String.valueOf(accountId),
+                AuditOutcome.DENIED,
+                "RRSP account closure denied: non-zero balance " + account.getBalance());
             throw new BadRequestException("NON_ZERO_BALANCE",
                     "Cannot close RRSP account with a non-zero balance", null);
         }
@@ -415,6 +473,14 @@ public class AccountService {
         account.setClosedAt(now);
         account.setDeletedAt(now);
         accountRepository.save(account);
+        auditService.log(AuditEventType.ACCOUNT_DELETED,
+            "accounts",
+            primaryRole(user),
+            user.getUserId().toString(),
+            "ACCOUNT",
+            String.valueOf(accountId),
+            AuditOutcome.SUCCESS,
+            "RRSP account closed with account ID: " + accountId);
 
         try {
             auditService.log(AuditEventType.ACCOUNT_DELETED,
@@ -519,7 +585,11 @@ public class AccountService {
     }
 
     private RoleName primaryRole(User user) {
+<<<<<<< HEAD
         return user.getRoles().stream().findFirst().orElse(RoleName.RETAIL_CUSTOMER);
+=======
+        return user.getRoles().stream().findFirst().orElse(RoleName.CUSTOMER);
+>>>>>>> feature/event-logging
     }
 
     private void checkAuthorization(User user, Long customerId) {
