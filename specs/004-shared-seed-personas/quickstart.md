@@ -61,6 +61,12 @@ GROUP BY u.username ORDER BY u.username;
 
 **Expect** the salaried persona with many transactions (18 months of expanded monthly series) and the sparse persona with exactly 2. Compare against [contracts/persona-catalogue.md](contracts/persona-catalogue.md) — the catalogue is the authority on what each row should be.
 
+Automated equivalent:
+
+```bash
+cd backend && ./mvnw test -Dtest=PersonaSeedingTest
+```
+
 ✅ **Pass**: four logins, each with the accounts and transaction volume its catalogue entry describes, and no manual data entry performed.
 
 ---
@@ -171,7 +177,14 @@ cd backend
 
 The last two are the ones that matter. A refusal must be distinguishable from a failure (SCR-002) — an operator seeing an environment with no personas must be able to tell "deliberately prevented" from "broken".
 
-**Check by hand that the default is off**, since this is the guard everything else rests on:
+The default-off guarantee is also asserted automatically, including that the runner bean is
+never created:
+
+```bash
+cd backend && ./mvnw test -Dtest=SeedDefaultOffTest
+```
+
+**Check by hand as well**, since this is the guard everything else rests on:
 
 ```bash
 cd backend
@@ -195,7 +208,18 @@ SELECT COUNT(*) FROM users WHERE username LIKE 'seed.%';
 cd backend && ./mvnw test
 ```
 
-All six scenarios plus the existing 71 test classes. Catalogue validation runs here by design (FR-020): a change to a persona that invalidates any of the four features' expectations fails at this point, which is the only change-notification mechanism this feature has — no version number, no changelog.
+All six scenarios plus the pre-existing suite - 730 tests in total.
+
+**Three failures are expected and are not caused by this feature**, verified by running them
+on a clean tree before any of this work landed:
+
+| Test | Cause |
+|---|---|
+| `RiskScoreServiceInsufficientDataTest.omitsScoreAndBandFromSerializedPayload` | Asserts a JSON field `status`; the DTO serialises it as `calculateStatus` |
+| `SavingsGoalServiceTest.deleteGoal_setsDeletedAt_doesNotHardDelete` | `SavingsGoalService.deleteGoal` calls `repository.delete()`, a hard delete |
+| `SavingsGoalServiceTest.createGoal_moreThanTwoDecimalPlaces_throwsInvalidTargetAmount` | Backend decimal-place validation is missing, so the call NPEs instead of throwing |
+
+Every seeding test passes. Catalogue validation runs here by design (FR-020): a change to a persona that invalidates any of the four features' expectations fails at this point, which is the only change-notification mechanism this feature has — no version number, no changelog.
 
 ---
 

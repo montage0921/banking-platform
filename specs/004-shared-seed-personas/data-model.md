@@ -76,10 +76,10 @@ Records bound from [contracts/persona-catalogue.md](./contracts/persona-catalogu
 
 | Field | Type | Asserted against |
 |---|---|---|
-| `riskStatus` | `RiskScoreStatus` | `CALCULATED` or `INSUFFICIENT_DATA` |
-| `riskLevel` | `String` \| null | `LOW`/`MODERATE`/`ELEVATED`/`HIGH`; null when `INSUFFICIENT_DATA` |
+| `riskStatus` | `RiskScoreStatus` | `OK` or `INSUFFICIENT_DATA` |
+| `riskLevel` | `RiskScoreLevel` | null |\| null | `LOW`/`MODERATE`/`ELEVATED`/`HIGH`; null when `INSUFFICIENT_DATA` |
 | `chatbotSufficientData` | `boolean` | `SpendCategorySummary.sufficientData` |
-| `goalProgressPercent` | `BigDecimal` \| null | Recomputed from balance ÷ target |
+| `goalProgressPercent` | `BigDecimal` \|| `riskLevel` | `RiskScoreLevel` | null | Recomputed from balance ÷ target |
 | `canManageRestrictions` | `boolean` | Whether the persona can freeze/unfreeze another account |
 
 Deliberately **no exact numeric risk score** — see [research.md](./research.md) R3. The level is asserted; the raw score is only checked for boundary proximity.

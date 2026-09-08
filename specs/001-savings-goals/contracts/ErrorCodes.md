@@ -4,6 +4,15 @@
 **Date**: June 5, 2026  
 **Spec**: [spec.md](../spec.md) | **Contract**: [SavingsGoalResponse.md](SavingsGoalResponse.md)
 
+
+> **On the identifiers in the examples below.** Values such as `account_id: 42` and
+> `customer_id: 100` are illustrative fields inside example error payloads - they document
+> the *shape* of a response, not test data. They are deliberately **not** migrated to the
+> shared seeded personas: rewriting them as persona logins would make these examples harder
+> to read without making anything more reproducible. Fixtures used to *run* scenarios live
+> in [quickstart.md](../quickstart.md), which does use the shared personas.
+
+
 ---
 
 ## Overview

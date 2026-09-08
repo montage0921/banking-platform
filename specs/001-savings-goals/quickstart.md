@@ -24,21 +24,50 @@
 
 ### Test Data
 
-```sql
--- Assume test customer exists
-SELECT * FROM customers WHERE customer_id = 1;
+Use the shared seeded personas. Do not hand-build a customer for this feature - the
+identifiers in an ad-hoc fixture stop matching the moment anyone rebuilds their
+database, and every feature ends up maintaining its own slightly different copy.
 
--- Assume test user exists (link to customer_id = 1)
-SELECT * FROM users WHERE customer_id = 1;
+Enable seeding and start the backend:
 
--- Assume test accounts exist
-SELECT * FROM account WHERE customer_id = 1 AND status = 'ACTIVE';
-
--- Example accounts:
--- account_id = 100, account_number = 'ACC-00100', balance = 1000.00, type = SAVINGS
--- account_id = 101, account_number = 'ACC-00101', balance = 2000.00, type = CHEQUING
--- account_id = 102, account_number = 'ACC-00102', balance = 0.00, type = SAVINGS
+```bash
+cd backend
+./mvnw spring-boot:run -Dspring-boot.run.arguments=--app.seed.personas.enabled=true
 ```
+
+The persona for this feature is **`goalSaver`** - `seed.goalsaver@voltio.test` - who has
+a SAVINGS account carrying an active goal at 45% progress with a target date 90 days
+out, plus a separate CHECKING account for everyday activity. Its full definition,
+including the expected progress percentage, lives in
+[`backend/src/main/resources/personas/voltio-personas.yaml`](../../backend/src/main/resources/personas/voltio-personas.yaml);
+the schema is documented in
+[the persona catalogue contract](../004-shared-seed-personas/contracts/persona-catalogue.md).
+
+```sql
+-- Resolve the persona by its reserved login. Never hardcode customer_id or account_id:
+-- those are generated, and deliberately not pinned.
+SELECT u.user_id, u.customer_id
+FROM users u
+WHERE u.username = 'seed.goalsaver@voltio.test';
+
+SELECT a.account_id, a.account_number, a.balance, a.account_type, a.status
+FROM account a
+  JOIN users u ON u.customer_id = a.customer_id
+WHERE u.username = 'seed.goalsaver@voltio.test';
+```
+
+Log in as the persona with the password documented on `PersonaSeeder.SEED_PASSWORD`.
+
+If a scenario below leaves the goal in a changed state, restore just this persona
+rather than wiping the environment - someone else may be working in it:
+
+```java
+resetService.reset("goalSaver");   // leaves every other persona untouched
+```
+
+**Writing tests against this persona**: read expected values from the catalogue through
+the `Personas` accessor rather than restating them here. A number written in two places
+is a number that will disagree with itself.
 
 ---
 

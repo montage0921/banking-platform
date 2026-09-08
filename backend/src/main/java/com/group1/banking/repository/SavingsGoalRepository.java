@@ -59,4 +59,8 @@ public interface SavingsGoalRepository extends JpaRepository<SavingsGoal, Long> 
             @Param("goalId") Long goalId,
             @Param("customerId") Long customerId
     );
+
+    /** Goals on one account, used by persona reset: savings goals are owned by Account
+     *  without a cascading collection, so they must be deleted explicitly. */
+    List<SavingsGoal> findAllByAccountAccountId(Long accountId);
 }

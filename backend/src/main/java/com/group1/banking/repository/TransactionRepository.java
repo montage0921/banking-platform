@@ -20,4 +20,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, String
      */
     @Query("select min(t.timestamp) from Transaction t where t.account.customer.customerId = :customerId")
     Instant findEarliestTimestampForCustomer(@Param("customerId") Long customerId);
+
+    /** Transactions on one account, used by persona reset: transactions are owned by
+     *  Account without a cascading collection, so they must be deleted explicitly. */
+    List<Transaction> findAllByAccountAccountId(Long accountId);
 }

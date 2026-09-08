@@ -14,6 +14,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.group1.banking.util.AccountIdentifiers;
 import com.group1.banking.dto.customer.AccountResponse;
 import com.group1.banking.dto.customer.CreateAccountRequest;
 import com.group1.banking.dto.customer.UpdateAccountRequest;
@@ -488,11 +489,11 @@ public class AccountService {
     }
 
     private long nextAccountId() {
-        return accountRepository.count() + 1000;
+        return AccountIdentifiers.nextAccountId(accountRepository.count());
     }
 
     private String generateAccountNumber(long accountId) {
-        return String.format("ACC%010d", accountId);
+        return AccountIdentifiers.accountNumber(accountId);
     }
 
     private User getAuthenticatedUser() {

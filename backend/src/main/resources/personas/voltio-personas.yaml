@@ -1,0 +1,288 @@
+# ============================================================================
+# Voltio persona catalogue - the shared seeded baseline.
+#
+# This file is the single source of truth. A person reads it to pick a persona;
+# the tests read their expected values from it. There is no second, generated
+# copy, so a change here cannot drift out of sync with what the tests assert -
+# it fails PersonaCatalogueValidationTest instead.
+#
+# There is deliberately no version number, changelog, or owners list. Catalogue
+# validation failing at the moment of a change IS the notification mechanism.
+#
+# TWO RULES WHEN EDITING:
+#   1. Never write an absolute date. Every temporal field is an offset resolved
+#      against the moment of seeding, because risk scoring and the chatbot both
+#      recompute their windows from "now" on every call.
+#   2. Never sit on a threshold. Values are chosen to sit clear of the risk
+#      bands (25/45/70) and the factor bands in risk-score-rules.yaml, so each
+#      persona's expected outcome is unambiguous.
+# ============================================================================
+
+persona-catalogue:
+  personas:
+
+    # ── The ordinary case ───────────────────────────────────────────────────
+    - key: salaried
+      login: seed.salaried@voltio.test
+      displayName: Dana Whitfield
+      role: CUSTOMER
+      provisionalRole: RETAIL_CUSTOMER
+      purpose: >
+        The customer who "just works". Regular income, regular spending, and
+        enough history that risk scoring produces a real score and the chatbot
+        personalises its answers. Reach for this persona whenever a scenario
+        needs a normal customer and nothing else about them matters.
+      scenarios:
+        - risk-scoring-happy-path
+        - chatbot-personalised-spending
+        - transaction-history
+      accounts:
+        - ref: main
+          type: CHECKING
+          status: ACTIVE
+          balance: 4250.00
+          dailyTransferLimit: 2000.00
+      transactions:
+        # 18 months of history: six times the 3-month risk minimum, so this
+        # persona cannot drift into INSUFFICIENT_DATA even if minMonths is
+        # later raised to 12.
+        - accountRef: main
+          amount: 3200.00
+          direction: CREDIT
+          status: SUCCESS
+          daysAgo: 1
+          repeatMonthly: 18
+          category: Salary
+          description: Monthly salary
+        # Three spend transactions inside the chatbot's 30-day lookback, which
+        # needs at least three to personalise. Ratio to income lands near 0.6 -
+        # between the 0.5 and 0.7 factor bands, clear of both.
+        - accountRef: main
+          amount: 1150.00
+          direction: DEBIT
+          status: SUCCESS
+          daysAgo: 3
+          repeatMonthly: 18
+          category: Rent
+          description: Monthly rent
+        - accountRef: main
+          amount: 480.00
+          direction: DEBIT
+          status: SUCCESS
+          daysAgo: 8
+          repeatMonthly: 18
+          category: Groceries
+          description: Supermarket
+        - accountRef: main
+          amount: 290.00
+          direction: DEBIT
+          status: SUCCESS
+          daysAgo: 15
+          repeatMonthly: 18
+          category: Transport
+          description: Travel pass
+      expectations:
+        riskStatus: OK
+        riskLevel: MODERATE
+        chatbotSufficientData: true
+        goalProgressPercent: null
+        canManageRestrictions: false
+
+    # ── Saving toward a near-term goal ──────────────────────────────────────
+    - key: goalSaver
+      login: seed.goalsaver@voltio.test
+      displayName: Marek Oyelaran
+      role: CUSTOMER
+      provisionalRole: RETAIL_CUSTOMER
+      purpose: >
+        Part-way toward a goal with a near-term target date. Progress is 45% -
+        chosen to sit in the middle of the 30-60 GOAL_PROGRESS band, the widest
+        margin available in that factor. Do not "tidy" this to 50%: it moves
+        toward the 60 boundary for no benefit.
+      scenarios:
+        - goal-tracker-in-progress
+        - goal-progress-display
+        - chatbot-goal-questions
+      accounts:
+        # 3600 / 8000 = 45% progress. Goal progress is derived from the account
+        # balance because SavingsGoal.currentBalance is @Transient - set the
+        # balance to produce the percentage, never the other way round.
+        - ref: savings
+          type: SAVINGS
+          status: ACTIVE
+          balance: 3600.00
+          dailyTransferLimit: 1000.00
+        - ref: everyday
+          type: CHECKING
+          status: ACTIVE
+          balance: 1875.00
+          dailyTransferLimit: 2000.00
+      goals:
+        - accountRef: savings
+          name: Emergency fund
+          targetAmount: 8000.00
+          targetDaysAhead: 90
+          status: IN_PROGRESS
+      transactions:
+        - accountRef: everyday
+          amount: 2400.00
+          direction: CREDIT
+          status: SUCCESS
+          daysAgo: 2
+          repeatMonthly: 14
+          category: Salary
+          description: Monthly salary
+        - accountRef: savings
+          amount: 250.00
+          direction: CREDIT
+          status: SUCCESS
+          daysAgo: 4
+          repeatMonthly: 14
+          category: Savings
+          description: Standing transfer to emergency fund
+        - accountRef: everyday
+          amount: 890.00
+          direction: DEBIT
+          status: SUCCESS
+          daysAgo: 6
+          repeatMonthly: 14
+          category: Rent
+          description: Monthly rent
+        - accountRef: everyday
+          amount: 320.00
+          direction: DEBIT
+          status: SUCCESS
+          daysAgo: 11
+          repeatMonthly: 14
+          category: Groceries
+          description: Supermarket
+        - accountRef: everyday
+          amount: 145.00
+          direction: DEBIT
+          status: SUCCESS
+          daysAgo: 19
+          repeatMonthly: 14
+          category: Utilities
+          description: Energy bill
+      expectations:
+        riskStatus: OK
+        riskLevel: MODERATE
+        chatbotSufficientData: true
+        goalProgressPercent: 45.00
+        canManageRestrictions: false
+
+    # ── Operations user ─────────────────────────────────────────────────────
+    - key: operations
+      login: seed.operations@voltio.test
+      displayName: Priya Fenwick
+      role: ADMIN
+      provisionalRole: BANK_ADMINISTRATOR
+      purpose: >
+        Manages account restrictions. Holds ADMIN because that is the only
+        elevated role the platform recognises today; the intended target role is
+        recorded above and is provisional until the role-definition story lands.
+        Carries one FROZEN account of its own so an unfreeze can be demonstrated
+        without touching another persona's data - which would break the rule
+        that a persona is the unit of reset.
+      scenarios:
+        - admin-control-freeze
+        - admin-control-unfreeze
+        - admin-account-listing
+      accounts:
+        - ref: operating
+          type: CHECKING
+          status: ACTIVE
+          balance: 900.00
+          dailyTransferLimit: 500.00
+        - ref: restricted
+          type: SAVINGS
+          status: FROZEN
+          balance: 1500.00
+          dailyTransferLimit: 500.00
+      transactions:
+        - accountRef: operating
+          amount: 2800.00
+          direction: CREDIT
+          status: SUCCESS
+          daysAgo: 2
+          repeatMonthly: 12
+          category: Salary
+          description: Monthly salary
+        - accountRef: operating
+          amount: 760.00
+          direction: DEBIT
+          status: SUCCESS
+          daysAgo: 5
+          repeatMonthly: 12
+          category: Rent
+          description: Monthly rent
+        - accountRef: operating
+          amount: 310.00
+          direction: DEBIT
+          status: SUCCESS
+          daysAgo: 12
+          repeatMonthly: 12
+          category: Groceries
+          description: Supermarket
+        - accountRef: operating
+          amount: 180.00
+          direction: DEBIT
+          status: SUCCESS
+          daysAgo: 21
+          repeatMonthly: 12
+          category: Utilities
+          description: Water bill
+      expectations:
+        riskStatus: OK
+        riskLevel: MODERATE
+        chatbotSufficientData: true
+        goalProgressPercent: null
+        canManageRestrictions: true
+
+    # ── Deliberately data-poor ──────────────────────────────────────────────
+    - key: sparse
+      login: seed.sparse@voltio.test
+      displayName: Ilan Roscoe
+      role: CUSTOMER
+      provisionalRole: RETAIL_CUSTOMER
+      purpose: >
+        Newly onboarded and deliberately data-poor, so both fallback paths stay
+        exercised by one persona. Two transactions is one short of the chatbot's
+        minimum of three; ten days of history is nowhere near the risk window's
+        three months.
+
+        Two transactions rather than zero, on purpose. Zero would pass both
+        checks vacuously and would not catch a regression where the chatbot's
+        count comparison flipped from >= to >. Two is the largest value that
+        still fails the threshold, so it is the tightest meaningful test of it.
+        Do not "round down" to zero and do not add a third transaction.
+      scenarios:
+        - risk-scoring-insufficient-data
+        - chatbot-fallback-response
+      accounts:
+        - ref: main
+          type: CHECKING
+          status: ACTIVE
+          balance: 180.00
+          dailyTransferLimit: 500.00
+      transactions:
+        - accountRef: main
+          amount: 45.00
+          direction: DEBIT
+          status: SUCCESS
+          daysAgo: 10
+          category: Groceries
+          description: Corner shop
+        - accountRef: main
+          amount: 22.50
+          direction: DEBIT
+          status: SUCCESS
+          daysAgo: 10
+          category: Transport
+          description: Bus fare
+      expectations:
+        riskStatus: INSUFFICIENT_DATA
+        riskLevel: null
+        chatbotSufficientData: false
+        goalProgressPercent: null
+        canManageRestrictions: false

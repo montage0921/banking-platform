@@ -36,7 +36,7 @@ its ApplicationReadyEvent check rather than letting it fail startup.
 ### Scenario B: Tools-used logging
 
 - Trigger a turn that invokes both getGicRates and knowledge-base search.
-- Query chat_interaction_log latest row for that customer.
+- Query chat_interaction_log latest row for that customer. Use the seeded `salaried` persona (`seed.salaried@voltio.test`), which has enough history for the chatbot to personalise rather than fall back; resolve its customer id from the login rather than hardcoding one. See `backend/src/main/resources/personas/voltio-personas.yaml`.
 - Expected outcome:
   - tools_used is non-empty and includes both tool names.
   - sources behavior remains intact.

@@ -59,7 +59,7 @@ personas:
         description: string
 
     expectations:            # required. What the four features must report.
-      riskStatus: CALCULATED | INSUFFICIENT_DATA
+      riskStatus: OK | INSUFFICIENT_DATA
       riskLevel: LOW | MODERATE | ELEVATED | HIGH | null
       chatbotSufficientData: bool
       goalProgressPercent: decimal | null
@@ -156,7 +156,7 @@ personas:
         category: Transport
         description: Travel pass
     expectations:
-      riskStatus: CALCULATED
+      riskStatus: OK
       riskLevel: MODERATE
       chatbotSufficientData: true
       goalProgressPercent: null
