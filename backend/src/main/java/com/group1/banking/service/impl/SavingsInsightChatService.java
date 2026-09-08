@@ -26,7 +26,7 @@ import com.group1.banking.service.impl.SavingsChatGuardrailService.GuardrailResu
  * were actually used is reconstructed afterwards via {@link SavingsChatCitationTracker}.
  *
  * Conversation memory: the {@code ChatClient} bean carries a {@code MessageChatMemoryAdvisor}
- * (see {@code ChatbotAiConfig}), and every call here binds {@link ChatMemory#CONVERSATION_ID}
+//  * (see {@code ChatbotAiConfig}), and every call here binds {@link ChatMemory#CONVERSATION_ID}
  * to the customer's ID, so follow-up questions in the same conversation ("is that a lot?")
  * resolve against prior turns. Memory is per-customer (not per browser session), holds the
  * last ~20 messages (tool-call/tool-response messages are never persisted to it - only the

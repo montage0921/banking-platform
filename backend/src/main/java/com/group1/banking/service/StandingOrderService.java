@@ -185,17 +185,6 @@ public class StandingOrderService {
                 .map(mapper::toResponse)
                 .collect(Collectors.toList());
  
-        RoleName actor2 = resolveRole(caller).equalsIgnoreCase("ADMIN")
-                ? RoleName.ADMIN : RoleName.CUSTOMER;
-        auditService.log(AuditEventType.STANDING_ORDER_CREATE,
-                "standing-orders",
-                actor2,
-                caller.getUserId().toString(),
-                "ACCOUNT",
-                String.valueOf(accountId),
-                AuditOutcome.SUCCESS,
-                null);
- 
         StandingOrderListResponse response = new StandingOrderListResponse();
         response.setAccountId(accountId);
         response.setStandingOrderCount(items.size());
