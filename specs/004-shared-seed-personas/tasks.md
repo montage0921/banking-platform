@@ -97,7 +97,7 @@ So the migration is T027–T030: one genuine fixture deletion, two vague referen
 - [ ] T019 [P] [US1] Write `backend/src/test/java/com/group1/banking/seed/Personas.java`, the test-side accessor. This is the **only** path by which tests may name a persona or read an expected value (FR-017): `byKey(String)`, `customerIdOf(Persona)`, `loginOf(Persona)`. One parse path means a schema change is absorbed in one place
 - [ ] T020 [US1] Write `backend/src/test/java/com/group1/banking/seed/PersonaSeedingTest.java` asserting all three personas exist after seeding a clean in-memory database, each with the accounts, transactions and goals its catalogue entry describes, and that no manual data entry is required
 
-**Checkpoint**: US1 delivers standalone value — the setup friction is gone even if nothing below ships.
+**Checkpoint**: the three personas exist — but the single-source-of-truth guarantee does not yet. US1 is not done until T029, T031 and T032 land (see the MVP definition below). Without them, nothing fails when someone hardcodes a value elsewhere, and the catalogue is a document rather than a source of truth.
 
 ---
 
@@ -139,7 +139,7 @@ So the migration is T027–T030: one genuine fixture deletion, two vague referen
 
 ### Catalogue as source of truth
 
-- [ ] T029 [US4] Write `backend/src/test/java/com/group1/banking/seed/PersonaCatalogueValidationTest.java` as a `@SpringBootTest` (FR-019): for every persona, assert seeded rows match its `expectations` block — risk status and level, chatbot sufficiency, goal progress recomputed from balance ÷ target, restriction-management capability. Also assert no duplicate account identifiers exist after seeding ([research.md](./research.md) R5)
+- [ ] T029 [US4] Write `backend/src/test/java/com/group1/banking/seed/PersonaCatalogueValidationTest.java` as a `@SpringBootTest` (FR-019): for every persona, assert seeded rows match its `expectations` block — risk status and level, chatbot sufficiency, goal progress recomputed from balance ÷ target, restriction-management capability. Also assert no duplicate account identifiers exist after seeding ([research.md](./research.md) R5). At MVP time this covers the three US1 personas; extend it to the sparse persona when T021 lands.
 - [ ] T030 [US4] Add the band-boundary margin check to `backend/src/test/java/com/group1/banking/seed/PersonaCatalogueValidationTest.java` (FR-023): each persona's computed risk score must sit clear of the 25/45/70 level cut points by a stated margin. This is a test rather than a hand calculation because the weights live in [risk-score-rules.yaml](backend/src/main/resources/risk-score-rules.yaml) and can be retuned
 - [ ] T031 [US4] Confirm `PersonaCatalogueValidationTest` runs in the default `./mvnw test` invocation (FR-020) so a persona change that invalidates any feature's expectation fails at the moment it is made. Document in the class javadoc *why* this is a standalone test rather than embedded in each feature's tests: the four features use `@WebMvcTest`/`@DataJpaTest` slices that never load the seeder, so same-invocation is the achievable form of "wherever the four features' tests run"
 - [ ] T032 [US4] Verify drift detection actually works by temporarily changing a persona's balance in `backend/src/main/resources/personas/voltio-personas.yaml`, confirming `PersonaCatalogueValidationTest` **fails**, then reverting. A validation test that cannot fail is not validation — if it passes, FR-017 is violated
@@ -216,12 +216,12 @@ T033 (001 quickstart) ‖ T034 (002 plan) ‖ T035 (003 quickstart) ‖ T036 (00
 
 ## Implementation Strategy
 
-**MVP = Phase 1 + Phase 2 + US1 (T001–T020).** That delivers the named cast in a guarded, reproducible form. Setup friction disappears and demos stop depending on whatever data a machine happens to hold — worth shipping on its own even if nothing else follows.
+**MVP = Phase 1 + Phase 2 + US1 + the enforcement tasks (T001–T020, plus T029, T031, T032).** That delivers the named cast in a guarded, reproducible form *and* the test that makes the catalogue authoritative. T029/T031/T032 are pulled forward out of US4 deliberately: they are what turns “we have personas” into “the personas are the truth”, and shipping the personas without them leaves a shared dataset that nothing defends. At this point T029 covers the three US1 personas; it is extended to the sparse persona when T021 lands.
 
 **Increment 2 = US2 (T021–T023).** Small and high-value: it pins two fallback paths that no current test covers and that will otherwise rot silently, because normal seeded data never reaches them.
 
 **Increment 3 = US3 (T024–T028).** Makes the baseline safe to share. Until per-persona reset exists, a shared QA environment is a collision waiting to happen.
 
-**Increment 4 = US4 (T029–T037).** Converts "we have personas" into "the personas are the truth". The validation tasks are the substance; the documentation migration is mostly deletion.
+**Increment 4 = the rest of US4 (T030, T033–T037).** T029, T031 and T032 were promoted into the MVP above. What remains is the band-boundary margin check and the documentation migration, which is mostly deletion.
 
 **On effort distribution**: the seeding machinery (Phases 1–5, T001–T028) is the bulk of the work. The migration the user asked to include is genuinely small — 5 documentation tasks, no test changes — because the codebase's tests were already self-contained. That is a good outcome, not a shortcut: it means adopting the shared baseline costs almost nothing in rework.
