@@ -44,5 +44,4 @@ group123-backend/
 spec_frontend.md
 vite.config.js
 .env
-backend/data/
-digitalbankdb.mv.db
+backend/data/digitalbankdb.mv.db

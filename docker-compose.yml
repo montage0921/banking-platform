@@ -1,7 +1,9 @@
 services:
-  # Postgres + pgvector for the Savings Insight Chatbot (RAG).
-  # This is intentionally separate from the app's primary MySQL/H2 datasource -
-  # it only stores the embedded knowledge base and chat interaction logs.
+  # Postgres + pgvector. Hosts two separate databases on one server:
+  #   banking_chat - the chatbot's embedded knowledge base and chat interaction log
+  #   banking_core - the application's core banking data (spec 004)
+  # They stay distinct databases so the backend's two datasources
+  # (ChatbotDataSourceConfig / PrimaryDataSourceConfig) are unchanged.
   pgvector:
     image: pgvector/pgvector:pg16
     container_name: banking-pgvector
@@ -16,12 +18,36 @@ services:
       - "5433:5432"
     volumes:
       - pgvector-data:/var/lib/postgresql/data
+      # Postgres only runs this on a brand new (empty) data directory.
       - ./docker/postgres-init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${CHATBOT_DB_USERNAME:-banking_chat} -d banking_chat"]
       interval: 5s
       timeout: 5s
       retries: 10
+
+  # Creates banking_core on every `docker compose up`, including on volumes that
+  # already existed before that database was introduced.
+  #
+  # This exists because the init script mounted above only ever runs against an
+  # empty data directory. Anyone who had this stack running before spec 004 has a
+  # populated pgvector-data volume, so that script never fires for them and the
+  # backend fails at startup against a database that does not exist. Wiping the
+  # volume would fix it but needlessly destroys the ingested knowledge base.
+  #
+  # Idempotent: it checks pg_database first and does nothing if banking_core is
+  # already there. The container runs once and exits, so seeing it as "Exited (0)"
+  # in `docker compose ps` is the expected result, not a failure.
+  create-banking-core:
+    image: pgvector/pgvector:pg16
+    container_name: banking-core-init
+    restart: "no"
+    depends_on:
+      pgvector:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${CHATBOT_DB_PASSWORD:-banking_chat}
+    entrypoint: ["sh", "-c", "psql -h pgvector -U ${CHATBOT_DB_USERNAME:-banking_chat} -d postgres -tc \"SELECT 1 FROM pg_database WHERE datname = 'banking_core'\" | grep -q 1 || psql -h pgvector -U ${CHATBOT_DB_USERNAME:-banking_chat} -d postgres -c \"CREATE DATABASE banking_core\""]
 
 volumes:
   pgvector-data:
