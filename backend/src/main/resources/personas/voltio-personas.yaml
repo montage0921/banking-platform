@@ -25,8 +25,7 @@ persona-catalogue:
     - key: salaried
       login: seed.salaried@voltio.test
       displayName: Dana Whitfield
-      role: CUSTOMER
-      provisionalRole: RETAIL_CUSTOMER
+      role: RETAIL_CUSTOMER
       purpose: >
         The customer who "just works". Regular income, regular spending, and
         enough history that risk scoring produces a real score and the chatbot
@@ -85,15 +84,13 @@ persona-catalogue:
         riskStatus: OK
         riskLevel: MODERATE
         chatbotSufficientData: true
-        goalProgressPercent: null
         canManageRestrictions: false
 
     # ── Saving toward a near-term goal ──────────────────────────────────────
     - key: goalSaver
       login: seed.goalsaver@voltio.test
       displayName: Marek Oyelaran
-      role: CUSTOMER
-      provisionalRole: RETAIL_CUSTOMER
+      role: RETAIL_CUSTOMER
       purpose: >
         Part-way toward a goal with a near-term target date. Progress is 45% -
         chosen to sit in the middle of the 30-60 GOAL_PROGRESS band, the widest
@@ -117,12 +114,31 @@ persona-catalogue:
           status: ACTIVE
           balance: 1875.00
           dailyTransferLimit: 2000.00
+        # Third account, carrying a goal whose target date has already passed. Separate
+        # because invariant C5 allows one goal per account, and because the overdue path
+        # needs a goal that is genuinely late rather than one nudged past its date.
+        - ref: holiday
+          type: SAVINGS
+          status: ACTIVE
+          balance: 1500.00
+          dailyTransferLimit: 1000.00
       goals:
         - accountRef: savings
           name: Emergency fund
           targetAmount: 8000.00
           targetDaysAhead: 90
           status: IN_PROGRESS
+          # 3600 / 8000 = 45%, mid-band between the 30 and 60 cut points.
+          expectedProgressPercent: 45.00
+        - accountRef: holiday
+          name: Holiday fund
+          targetAmount: 2000.00
+          # Negative: the target date is 30 days in the past, so this goal is already
+          # overdue on every seeding run without anyone having to wait for it.
+          targetDaysAhead: -30
+          status: OVERDUE
+          # 1500 / 2000 = 75%, clear of the 60 and 90 boundaries by 15 either way.
+          expectedProgressPercent: 75.00
       transactions:
         - accountRef: everyday
           amount: 2400.00
@@ -168,19 +184,15 @@ persona-catalogue:
         riskStatus: OK
         riskLevel: MODERATE
         chatbotSufficientData: true
-        goalProgressPercent: 45.00
         canManageRestrictions: false
 
     # ── Operations user ─────────────────────────────────────────────────────
     - key: operations
       login: seed.operations@voltio.test
       displayName: Priya Fenwick
-      role: ADMIN
-      provisionalRole: BANK_ADMINISTRATOR
+      role: BANK_ADMINISTRATOR
       purpose: >
-        Manages account restrictions. Holds ADMIN because that is the only
-        elevated role the platform recognises today; the intended target role is
-        recorded above and is provisional until the role-definition story lands.
+        Manages account restrictions.
         Carries one FROZEN account of its own so an unfreeze can be demonstrated
         without touching another persona's data - which would break the rule
         that a persona is the unit of reset.
@@ -236,15 +248,137 @@ persona-catalogue:
         riskStatus: OK
         riskLevel: MODERATE
         chatbotSufficientData: true
-        goalProgressPercent: null
         canManageRestrictions: true
+
+    # ── Risk analyst ────────────────────────────────────────────────────────
+    - key: riskAnalyst
+      login: seed.riskanalyst@voltio.test
+      displayName: Teodora Vance
+      role: RISK_ANALYST
+      purpose: >
+        Reviews risk scores across the customer book. Exists so any feature gated
+        on the Risk Analyst role has an identity to test with - without it, the
+        first person who needs one hand-builds a customer, which is the
+        duplication this dataset exists to prevent.
+
+        Deliberately NOT a restriction manager: authorization grants freeze and
+        unfreeze to Bank Administrator only, and this persona is what proves a
+        non-administrator staff role does not inherit that power.
+      scenarios:
+        - risk-analyst-review
+        - role-based-access-risk-analyst
+      accounts:
+        - ref: main
+          type: CHECKING
+          status: ACTIVE
+          balance: 2100.00
+          dailyTransferLimit: 1000.00
+      transactions:
+        - accountRef: main
+          amount: 2600.00
+          direction: CREDIT
+          status: SUCCESS
+          daysAgo: 2
+          repeatMonthly: 12
+          category: Salary
+          description: Monthly salary
+        - accountRef: main
+          amount: 820.00
+          direction: DEBIT
+          status: SUCCESS
+          daysAgo: 6
+          repeatMonthly: 12
+          category: Rent
+          description: Monthly rent
+        - accountRef: main
+          amount: 265.00
+          direction: DEBIT
+          status: SUCCESS
+          daysAgo: 13
+          repeatMonthly: 12
+          category: Groceries
+          description: Supermarket
+        - accountRef: main
+          amount: 130.00
+          direction: DEBIT
+          status: SUCCESS
+          daysAgo: 22
+          repeatMonthly: 12
+          category: Utilities
+          description: Internet
+      expectations:
+        riskStatus: OK
+        riskLevel: MODERATE
+        chatbotSufficientData: true
+        canManageRestrictions: false
+
+    # ── Compliance / audit observer ─────────────────────────────────────────
+    - key: complianceObserver
+      login: seed.compliance@voltio.test
+      displayName: Absalom Nkemdirim
+      role: COMPLIANCE_AUDIT_OBSERVER
+      purpose: >
+        Read-only oversight of audit trails and account activity. Exists for the
+        same reason as the risk analyst: the role is real, so it needs a seeded
+        identity before a feature depends on it.
+
+        Also not a restriction manager. Together with the risk analyst, this
+        persona keeps two of the three non-customer roles pinned as NOT holding
+        administrative powers, so a permissions change that widens freeze and
+        unfreeze surfaces as a catalogue mismatch naming the persona.
+      scenarios:
+        - compliance-audit-review
+        - role-based-access-compliance-observer
+      accounts:
+        - ref: main
+          type: CHECKING
+          status: ACTIVE
+          balance: 1750.00
+          dailyTransferLimit: 1000.00
+      transactions:
+        - accountRef: main
+          amount: 2400.00
+          direction: CREDIT
+          status: SUCCESS
+          daysAgo: 3
+          repeatMonthly: 12
+          category: Salary
+          description: Monthly salary
+        - accountRef: main
+          amount: 700.00
+          direction: DEBIT
+          status: SUCCESS
+          daysAgo: 7
+          repeatMonthly: 12
+          category: Rent
+          description: Monthly rent
+        - accountRef: main
+          amount: 240.00
+          direction: DEBIT
+          status: SUCCESS
+          daysAgo: 14
+          repeatMonthly: 12
+          category: Groceries
+          description: Supermarket
+        - accountRef: main
+          amount: 95.00
+          direction: DEBIT
+          status: SUCCESS
+          daysAgo: 24
+          repeatMonthly: 12
+          category: Transport
+          description: Travel pass
+      expectations:
+        riskStatus: OK
+        riskLevel: MODERATE
+        chatbotSufficientData: true
+        canManageRestrictions: false
 
     # ── Deliberately data-poor ──────────────────────────────────────────────
     - key: sparse
       login: seed.sparse@voltio.test
       displayName: Ilan Roscoe
-      role: CUSTOMER
-      provisionalRole: RETAIL_CUSTOMER
+      role: RETAIL_CUSTOMER
       purpose: >
         Newly onboarded and deliberately data-poor, so both fallback paths stay
         exercised by one persona. Two transactions is one short of the chatbot's
@@ -284,5 +418,4 @@ persona-catalogue:
         riskStatus: INSUFFICIENT_DATA
         riskLevel: null
         chatbotSufficientData: false
-        goalProgressPercent: null
         canManageRestrictions: false

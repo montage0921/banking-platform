@@ -59,8 +59,6 @@ public class PersonaCatalogue {
         private String login;
         private String displayName;
         private RoleName role;
-        /** Intended target role once the role-definition story lands. Recorded, not enforced. */
-        private String provisionalRole;
         /** Why this persona exists. Read by people; never asserted on. */
         private String purpose;
         private List<String> scenarios = new ArrayList<>();
@@ -85,9 +83,20 @@ public class PersonaCatalogue {
         private String accountRef;
         private String name;
         private BigDecimal targetAmount;
-        /** Relative offset, resolved against the run anchor. */
+        /**
+         * Relative offset, resolved against the run anchor. Negative values are permitted and
+         * meaningful: they produce a goal whose target date has already passed, which is how
+         * the overdue path is exercised.
+         */
         private int targetDaysAhead;
         private SavingsGoalStatus status;
+        /**
+         * Progress this goal must show, recomputed from balance / targetAmount by the
+         * validation test. Declared per goal rather than per persona so a persona with more
+         * than one goal has an unambiguous expectation for each - a single per-persona value
+         * would have to be matched to a goal by list position, which is not a stable key.
+         */
+        private BigDecimal expectedProgressPercent;
     }
 
     @Data
@@ -111,7 +120,6 @@ public class PersonaCatalogue {
         /** Null exactly when riskStatus is INSUFFICIENT_DATA. */
         private RiskScoreLevel riskLevel;
         private boolean chatbotSufficientData;
-        private BigDecimal goalProgressPercent;
         private boolean canManageRestrictions;
     }
 
@@ -226,15 +234,15 @@ public class PersonaCatalogue {
                         + " expects a calculated score but names no riskLevel.");
             }
 
-            // C9: a goal expectation must have a goal behind it, or nothing produces the value.
-            boolean hasGoals = !p.getGoals().isEmpty();
-            if (hasGoals && e.getGoalProgressPercent() == null) {
-                throw new IllegalStateException("C9 violated: " + id
-                        + " has goals but no expected goalProgressPercent.");
-            }
-            if (!hasGoals && e.getGoalProgressPercent() != null) {
-                throw new IllegalStateException("C9 violated: " + id
-                        + " expects goal progress but has no goals.");
+            // C9: every goal declares the progress it must show. Per goal, not per persona,
+            // so a persona with several goals has one unambiguous expectation for each.
+            for (SeedGoal g : p.getGoals()) {
+                if (g.getExpectedProgressPercent() == null) {
+                    throw new IllegalStateException("C9 violated: " + id + " goal '" + g.getName()
+                            + "' declares no expectedProgressPercent.");
+                }
+                requireScale2(g.getExpectedProgressPercent(),
+                        id + " goal '" + g.getName() + "' expectedProgressPercent");
             }
         }
 
@@ -253,6 +261,19 @@ public class PersonaCatalogue {
                 .anyMatch(p -> p.getExpectations().isCanManageRestrictions());
         if (!hasOperations) {
             throw new IllegalStateException("C7 violated: no persona can manage account restrictions.");
+        }
+
+        // C11: every role the platform recognizes must have someone holding it. Adding a
+        // role without adding a persona leaves any feature gated on that role with no
+        // identity to test against - which is exactly how RISK_ANALYST and
+        // COMPLIANCE_AUDIT_OBSERVER sat uncovered after the role-definition story landed.
+        for (RoleName role : RoleName.values()) {
+            boolean held = personas.stream().anyMatch(p -> p.getRole() == role);
+            if (!held) {
+                throw new IllegalStateException("C11 violated: no persona holds the role '"
+                        + role.name() + "'. Every role the platform recognizes needs a seeded "
+                        + "identity, or features gated on it have nothing to test with.");
+            }
         }
     }
 

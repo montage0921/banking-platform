@@ -69,6 +69,25 @@ resetService.reset("goalSaver");   // leaves every other persona untouched
 the `Personas` accessor rather than restating them here. A number written in two places
 is a number that will disagree with itself.
 
+### Account mapping for the scenarios below
+
+The scenarios reference three accounts belonging to the `goalSaver` persona. Resolve each by
+its role, never by a hardcoded id - the ids are generated and deliberately not pinned:
+
+| Referred to below as | goalSaver account | Baseline state |
+|---|---|---|
+| **the no-goal account** | the CHECKING account with no savings goal | no goal - the "Add a goal" prompt shows |
+| **the overdue-goal account** | the SAVINGS account holding "Holiday fund" | goal OVERDUE, 75% progress, target date 30 days past |
+| **the active-goal account** | the SAVINGS account holding "Emergency fund" | goal IN_PROGRESS, 45% progress, target date 90 days ahead |
+
+**These scenarios mutate state and run in sequence** - Scenario 1 creates a goal that later
+scenarios read, and Scenario 4 deletes one. Restore the baseline before each full pass, and
+scope it so nobody else's work is touched:
+
+```java
+resetService.reset("goalSaver");
+```
+
 ---
 
 ## Runnable Validation Scenarios
@@ -80,16 +99,16 @@ is a number that will disagree with itself.
 **Preconditions**:
 
 - Authenticated as test customer (JWT token obtained)
-- Account ACC-00100 (id=100) exists, status=ACTIVE, balance=1000.00, has no goal
+- Account the no-goal account exists, status=ACTIVE, balance=1000.00, has no goal
 
 **Steps**:
 
 1. **Navigate to Accounts page**
    - Open http://localhost:5173/accounts
    - Verify account list renders
-   - Verify ACC-00100 shows "Add a goal" prompt
+   - Verify the no-goal account shows "Add a goal" prompt
 
-2. **Click "Add a goal" under ACC-00100**
+2. **Click "Add a goal" under the no-goal account**
    - Modal opens with 3-question form
    - Q1 dropdown shows: Emergency Fund, Travel, Tuition, Home, Car, Retirement, Other
 
@@ -109,7 +128,7 @@ is a number that will disagree with itself.
    - Button: "Confirm"
 
 7. **Click "Confirm"**
-   - POST /accounts/100/goals sent with goal_name="Travel", target_amount=5000.00, target_date="2026-12-31"
+   - POST /accounts/{no-goal account id}/goals sent with goal_name="Travel", target_amount=5000.00, a target date about a year ahead
    - Response 201 received with goal_id=1, progress_percentage=20.00, status="IN_PROGRESS", time_remaining_days=209
 
 **Expected Outcome**:
@@ -131,7 +150,7 @@ is a number that will disagree with itself.
 **Preconditions**:
 
 - Authenticated as test customer
-- Goal already exists for ACC-00101 with target_date="2026-03-01" (in past), balance=800.00, target_amount=3000.00
+- Goal already exists for the overdue-goal account with a target date already in the past, balance=800.00, target_amount=3000.00
 
 **Steps**:
 
@@ -139,7 +158,7 @@ is a number that will disagree with itself.
    - Open http://localhost:5173/accounts
    - Verify account list renders
 
-2. **Select account ACC-00101**
+2. **Select account the overdue-goal account**
    - Goal card displays with:
      - Goal name: whatever was saved (e.g., "Emergency Fund")
      - Progress bar: 26.67% filled (800 / 3000)
@@ -169,11 +188,11 @@ is a number that will disagree with itself.
 **Preconditions**:
 
 - Authenticated as test customer
-- Goal exists: goal_id=2, account_id=100, goal_name="Travel", target_amount=5000.00, target_date="2026-12-31", balance=1000.00
+- Goal exists: goal_name="Travel", target_amount=5000.00, a target date about a year ahead, balance=1000.00
 
 **Steps**:
 
-1. **Navigate to goal card for ACC-00100**
+1. **Navigate to goal card for the no-goal account**
    - Open Accounts page
    - Goal displays with 20% progress
 
@@ -192,7 +211,7 @@ is a number that will disagree with itself.
    - Q3 date picker updates to "2027-03-01"
 
 5. **Click "Save"**
-   - PUT /accounts/100/goals/2 sent with goal_name="Travel", target_amount=6000.00, target_date="2027-03-01"
+   - PUT /accounts/{no-goal account id}/goals/{goal id} sent with goal_name="Travel", target_amount=6000.00, a later target date
    - Response 200 received with:
      - progress_percentage = (1000 / 6000) \* 100 = 16.67
      - time_remaining_days = 300 (new date minus today)
@@ -217,11 +236,11 @@ is a number that will disagree with itself.
 **Preconditions**:
 
 - Authenticated as test customer
-- Goal exists for ACC-00102, goal_id=3
+- Goal exists for the active-goal account, its goal id
 
 **Steps**:
 
-1. **Navigate to goal card for ACC-00102**
+1. **Navigate to goal card for the active-goal account**
    - Goal displays (e.g., "Home", 0% progress, 0 days remaining)
 
 2. **Click "Delete" button**
@@ -236,7 +255,7 @@ is a number that will disagree with itself.
 
 4. **Verify UI state**
    - Goal card disappears
-   - Account ACC-00102 returns to "Add a goal" prompt state
+   - Account the active-goal account returns to "Add a goal" prompt state
 
 5. **Verify database state** (optional backend validation)
    - Query: SELECT \* FROM savings_goals WHERE goal_id = 3;
@@ -258,13 +277,13 @@ is a number that will disagree with itself.
 **Preconditions**:
 
 - Authenticated as test customer
-- Goal exists for ACC-00100: target_amount=5000.00, progress_percentage=20% (balance=1000.00)
-- Account ACC-00100 balance will be increased via transaction
+- Goal exists for the no-goal account: target_amount=5000.00, progress_percentage=20% (balance=1000.00)
+- Account the no-goal account balance will be increased via transaction
 
 **Steps**:
 
 1. **View goal card**
-   - ACC-00100 goal displays: "20% of $5000.00"
+   - the no-goal account goal displays: "20% of $5000.00"
 
 2. **Simulate account transaction** (test data injection or API call)
    - POST /accounts/100/deposit (or similar)
@@ -331,17 +350,17 @@ is a number that will disagree with itself.
 
 **Preconditions**:
 
-- Goal already exists for ACC-00100
-- Authenticated user attempts to create another goal for ACC-00100
+- Goal already exists for the no-goal account
+- Authenticated user attempts to create another goal for the no-goal account
 
 **Steps**:
 
-1. **Click "Add a goal" on ACC-00100**
+1. **Click "Add a goal" on the no-goal account**
    - Modal opens again (button visible despite existing goal) — BUG or UX choice?
    - OR button disabled and shows "Edit goal" instead — expected UX
 
-2. **Attempt to POST /accounts/100/goals** (if button exists)
-   - Request sent with goal_name="Vacation", target_amount=3000.00, target_date="2027-06-30"
+2. **Attempt to POST /accounts/{no-goal account id}/goals** (if button exists)
+   - Request sent with goal_name="Vacation", target_amount=3000.00, a target date about a year ahead
    - Response 409 Conflict:
      ```json
      {
@@ -368,7 +387,7 @@ is a number that will disagree with itself.
 
 **Preconditions**:
 
-- Creating new goal for ACC-00102 (no goal yet)
+- Creating new goal for the active-goal account (no goal yet)
 
 **Steps**:
 
@@ -407,23 +426,23 @@ is a number that will disagree with itself.
 **Preconditions**:
 
 - Customer has multiple accounts with goals:
-  - ACC-00100: goal "Travel", target=$5000, progress=60%
-  - ACC-00101: goal "Emergency Fund", target=$3000, progress=26.67%, OVERDUE
-  - ACC-00102: no goal yet
+  - the no-goal account: goal "Travel", target=$5000, progress=60%
+  - the overdue-goal account: goal "Emergency Fund", target=$3000, progress=26.67%, OVERDUE
+  - the active-goal account: no goal yet
 
 **Steps**:
 
 1. **Navigate to Accounts page**
    - Single GET /customers/1/goals call made (bulk fetch)
 
-2. **Verify response contains 2 goals** (ACC-00100 and ACC-00101, not ACC-00102)
+2. **Verify response contains 2 goals** (the no-goal account and the overdue-goal account, not the active-goal account)
    - Array of 2 SavingsGoalResponse objects returned
    - Each includes: goal_id, account info, progress, status
 
 3. **Verify goal cards render**
-   - ACC-00100: "Travel" card with 60% progress
-   - ACC-00101: "Emergency Fund" card with OVERDUE badge
-   - ACC-00102: "Add a goal" prompt
+   - the no-goal account: "Travel" card with 60% progress
+   - the overdue-goal account: "Emergency Fund" card with OVERDUE badge
+   - the active-goal account: "Add a goal" prompt
 
 **Expected Outcome**:
 

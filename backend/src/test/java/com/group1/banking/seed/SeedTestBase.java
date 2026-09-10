@@ -11,9 +11,9 @@ import com.group1.banking.DigitalBankingPlatformApplication;
 /**
  * Shared setup for the seeding tests.
  *
- * <p>Runs against its own in-memory database with {@code create-drop}, following the pattern
- * already established by {@code AuthCustomerIntegrationTest}, so these tests never touch the
- * developer's local {@code ./data/digitalbankdb} file.
+ * <p>Runs against a real PostgreSQL instance carrying the Flyway-managed schema, because a
+ * reproducibility guarantee is only worth the engine it was proven on. Requires a database to
+ * be reachable - see the pgvector service in {@code docker-compose.yml}.
  *
  * <p>The enabling flag is left <em>off</em> here and seeding is invoked explicitly in each test.
  * That keeps the default-off guarantee under test rather than quietly bypassed, and lets a test
@@ -22,11 +22,19 @@ import com.group1.banking.DigitalBankingPlatformApplication;
 @SpringBootTest(classes = DigitalBankingPlatformApplication.class)
 @Import(Personas.class)
 @TestPropertySource(properties = {
-        "spring.datasource.url=jdbc:h2:mem:seedtestdb;DB_CLOSE_DELAY=-1",
-        "spring.datasource.driverClassName=org.h2.Driver",
-        "spring.datasource.username=sa",
-        "spring.datasource.password=",
-        "spring.jpa.hibernate.ddl-auto=create-drop",
+        // Real PostgreSQL with the Flyway-managed V001 schema - the same engine and schema
+        // the deployed application uses. An in-memory substitute would let the seeder pass
+        // here and fail on first contact with the real schema; identifier generation already
+        // broke once in exactly that way, and it is engine-specific behaviour.
+        //
+        // The consequence, accepted deliberately: no database means no seed tests, including
+        // in CI. Bring one up with the pgvector service in docker-compose.yml.
+        "spring.datasource.url=${APP_DB_URL:jdbc:postgresql://localhost:5433/banking_core}",
+        "spring.datasource.driver-class-name=org.postgresql.Driver",
+        "spring.datasource.username=${APP_DB_USERNAME:banking_chat}",
+        "spring.datasource.password=${APP_DB_PASSWORD:banking_chat}",
+        "spring.jpa.hibernate.ddl-auto=validate",
+        "spring.flyway.enabled=true",
         "app.seed.personas.enabled=false",
         "spring.ai.mcp.client.enabled=false"
 })
@@ -44,7 +52,16 @@ abstract class SeedTestBase {
     @Autowired
     protected Personas personas;
 
-    /** Every test starts from a clean, freshly seeded baseline. */
+    /**
+     * Every test starts from a clean, freshly seeded baseline.
+     *
+     * <p>This matters more than it did on H2. With {@code create-drop} the schema was rebuilt
+     * per run, so leftover state was impossible; against a persistent PostgreSQL it is the
+     * norm. {@code resetAll} deletes and recreates every persona, so a previous run's
+     * mutations cannot make a test pass or fail for the wrong reason - which
+     * {@code PersonaResetScopeTest} is especially exposed to, since it asserts on mutations
+     * it makes itself.
+     */
     @BeforeEach
     void seedBaseline() {
         resetService.resetAll();

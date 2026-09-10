@@ -9,7 +9,13 @@ How to prove the baseline works end to end. Six scenarios, one per user story pl
 ## Prerequisites
 
 - **Java 21** and the Maven wrapper at `backend/mvnw`
-- **Primary datasource**: H2 file mode by default (`jdbc:h2:file:./data/digitalbankdb`) — no external database needed for any scenario below. QA environments on MySQL or PostgreSQL work identically; the seeder writes through JPA.
+- **A running PostgreSQL is required.** The primary datasource is `jdbc:postgresql://localhost:5433/banking_core`, and the seeding tests run against it rather than a substitute (FR-009a). Start one with the `pgvector` and `create-banking-core` services in [docker-compose.yml](docker-compose.yml):
+
+  ```bash
+  docker compose up -d pgvector create-banking-core
+  ```
+
+  No database means no seed tests — including in CI. That is the accepted cost of proving the baseline against the engine it actually runs on.
 - **Seeding disabled by default.** Every scenario that seeds must turn it on explicitly. This is the point, not an inconvenience.
 - **Not required**: the chatbot's PostgreSQL/pgvector store, a `GROQ_API_KEY`, or the MCP rates server. Scenario 3 asserts the chatbot's *data-sufficiency* decision, which is computed from transactions in `SavingsChatContextService` before any model call.
 
@@ -35,11 +41,10 @@ export APP_SEED_PERSONAS_ENABLED=true
 
 ```bash
 cd backend
-rm -rf ./data/digitalbankdb*          # clean slate
 ./mvnw spring-boot:run -Dspring-boot.run.arguments=--app.seed.personas.enabled=true
 ```
 
-**Verify** at `http://localhost:8080/h2-console` (JDBC URL `jdbc:h2:file:./data/digitalbankdb`, user `sa`, no password):
+**Verify** with `psql` (or any client) against `banking_core` on port 5433:
 
 ```sql
 SELECT username, is_active FROM users WHERE username LIKE 'seed.%' ORDER BY username;
@@ -105,7 +110,7 @@ cd backend
 
 ```sql
 -- The salaried persona's earliest transaction, relative to the 3-month risk window.
-SELECT MIN(t.timestamp) AS earliest, DATEADD('MONTH', -3, CURRENT_TIMESTAMP) AS risk_cutoff
+SELECT MIN(t.timestamp) AS earliest, CURRENT_TIMESTAMP - INTERVAL '3 months' AS risk_cutoff
 FROM bank_transaction t
   JOIN account a ON a.account_id = t.account_id
   JOIN users u ON u.customer_id = a.customer_id
@@ -188,7 +193,7 @@ cd backend && ./mvnw test -Dtest=SeedDefaultOffTest
 
 ```bash
 cd backend
-rm -rf ./data/digitalbankdb*
+psql -h localhost -p 5433 -U banking_chat -d banking_core      -c "DELETE FROM users WHERE username LIKE 'seed.%';"
 ./mvnw spring-boot:run          # note: NO enabling flag
 ```
 

@@ -29,8 +29,9 @@ personas:
   - key: string              # required, unique. Symbolic name; the reset scope unit.
     login: string            # required, unique. Reserved login identity (natural key).
     displayName: string      # required. Fictional person name.
-    role: CUSTOMER | ADMIN   # required. Today's only two roles.
-    provisionalRole: string  # optional. Intended target role; recorded, not enforced.
+    role: BANK_ADMINISTRATOR | RISK_ANALYST | COMPLIANCE_AUDIT_OBSERVER | RETAIL_CUSTOMER
+                             # required. Exactly one, and a role the platform recognizes.
+                             # No provisional or aspirational second role (FR-021).
     purpose: string          # required. Why this persona exists. Never asserted on.
     scenarios: [string]      # required, >=1. Scenarios that touch this persona.
 
@@ -87,7 +88,8 @@ Violating any of these fails at load time, before seeding starts, so a malformed
 | C4 | Every `accountRef` resolves within the same persona | FR-015 — no data shared between personas, so no cross-persona ref |
 | C5 | At most one goal per `accountRef` | Database constraint `uq_sg_customer_account` |
 | C6 | At least one persona with `riskStatus: INSUFFICIENT_DATA` and `chatbotSufficientData: false` | FR-007 — deleting the sparse persona must fail the build, not silently drop edge-case coverage |
-| C7 | At least one persona with `canManageRestrictions: true` | FR-006 — the operations user must exist |
+| C7 | At least one persona with `canManageRestrictions: true` | FR-006 — restriction management must have an actor |
+| C11 | Every `RoleName` value is held by at least one persona | FR-001a — a role with no persona leaves features gated on it untestable |
 | C8 | `riskLevel` is null iff `riskStatus` is `INSUFFICIENT_DATA` | Matches `RiskScoreResponse`, which omits level when data is insufficient |
 | C9 | `goalProgressPercent` non-null iff the persona has ≥1 goal | Prevents an expectation that nothing produces |
 | C10 | Decimal fields carry at most 2 decimal places | Columns are `precision 19, scale 2`; more would silently round |
@@ -105,7 +107,6 @@ personas:
     login: seed.salaried@voltio.test
     displayName: Dana Whitfield
     role: CUSTOMER
-    provisionalRole: RETAIL_CUSTOMER
     purpose: >
       The ordinary case. Regular income, regular spending, enough history that
       risk scoring produces a real score and the chatbot personalises its answers.
@@ -167,7 +168,6 @@ personas:
     login: seed.sparse@voltio.test
     displayName: Ilan Roscoe
     role: CUSTOMER
-    provisionalRole: RETAIL_CUSTOMER
     purpose: >
       Newly onboarded. Deliberately data-poor so the fallback paths stay exercised:
       two transactions is one short of the chatbot's minimum of three, and ten days

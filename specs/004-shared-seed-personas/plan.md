@@ -6,7 +6,7 @@
 
 ## Summary
 
-Define four named personas — salaried customer, goal saver, operations user, and a deliberately sparse newcomer — as a single YAML catalogue that is simultaneously the human reference and the source of expected values the tests assert against. A guarded startup component reads that catalogue and writes the personas through the existing repositories, anchoring every date relative to the moment of seeding so a persona's classification against the risk-scoring window never drifts. Seeding is off by default and refuses outright on a production-shaped configuration. Applying it twice fills only what is missing; restoring a known state is a separate, explicitly invoked reset that is scoped per persona so one person's cleanup cannot destroy another's in-flight work in a shared environment.
+Define six named personas — salaried customer, goal saver, operations user, a deliberately sparse newcomer, a risk analyst and a compliance/audit observer — as a single YAML catalogue that is simultaneously the human reference and the source of expected values the tests assert against. A guarded startup component reads that catalogue and writes the personas through the existing repositories, anchoring every date relative to the moment of seeding so a persona's classification against the risk-scoring window never drifts. Seeding is off by default and refuses outright on a production-shaped configuration. Applying it twice fills only what is missing; restoring a known state is a separate, explicitly invoked reset that is scoped per persona so one person's cleanup cannot destroy another's in-flight work in a shared environment.
 
 The technical crux is that two independently configured thresholds define "insufficient data" — risk scoring needs a transaction older than `minMonths: 3`, the chatbot needs at least `min-for-personalization: 3` spend transactions in a 30-day window — and one persona has to sit clear of *both*, in the same direction, without landing on either boundary.
 
@@ -16,7 +16,7 @@ The technical crux is that two independently configured thresholds define "insuf
 
 **Primary Dependencies**: Spring Boot 4.1.0 (`spring-boot-starter-data-jpa`, `-security`, `-validation`), SnakeYAML via Spring's existing YAML property binding (already used for `risk-score-rules.yaml`). No new dependency required.
 
-**Storage**: Primary datasource is H2 in file mode (`jdbc:h2:file:./data/digitalbankdb`) with `ddl-auto=update`; MySQL and PostgreSQL drivers are on the classpath for other environments. The chatbot's pgvector store is a separate datasource and is out of scope — personas carry no vector-store rows.
+**Storage**: Primary datasource is PostgreSQL (`jdbc:postgresql://localhost:5433/banking_core` by default) with `ddl-auto=validate` and a Flyway-managed schema whose baseline is `V001__baseline_schema.sql`. The seeding tests run against this same engine and schema rather than a substitute (FR-009a), so a live database is required to run them. The chatbot's pgvector store is a separate datasource on the same server and is out of scope — personas carry no vector-store rows.
 
 **Testing**: JUnit 5 + `spring-boot-starter-test`, Mockito, `spring-security-test`. 71 existing test classes; `@WithCustomUser` ([WithCustomUser.java](backend/src/test/java/com/group1/banking/controller/WithCustomUser.java)) is the established pattern for authenticated controller tests.
 
@@ -28,7 +28,7 @@ The technical crux is that two independently configured thresholds define "insuf
 
 **Constraints**: No new HTTP endpoints and no DTO changes (keeps the constitution's contract and CORS gates untouched). Off by default in every environment. All dates relative, never absolute. No baseline version number, change log, or generated documentation — all three were explicitly ruled out during clarification.
 
-**Scale/Scope**: 4 personas is the committed baseline, not a closed set; the catalogue must accept a fifth without code changes.
+**Scale/Scope**: 6 personas — one per recognized role plus the salaried, goal-saver and sparse cases. Not a closed set: the catalogue accepts more without code changes, and invariant C11 requires a persona for every role the platform adds.
 
 ## Constitution Check
 
@@ -72,8 +72,7 @@ backend/src/main/resources/
                                       # humans and tests. Hand-edited, never generated.
 
 backend/src/main/java/com/group1/banking/seed/
-├── PersonaCatalogue.java             # Records binding voltio-personas.yaml
-├── PersonaCatalogueProperties.java   # @ConfigurationProperties loader
+├── PersonaCatalogue.java             # Binding + invariants C1-C11 (one class, not two)
 ├── SeedGuard.java                    # The two independent guards (SCR-001)
 ├── PersonaSeeder.java                # Fill-in-missing apply (FR-012)
 ├── PersonaResetService.java          # Per-persona restore (FR-013–FR-015)

@@ -37,8 +37,17 @@ class PersonaCatalogueLoadTest {
     @DisplayName("the real catalogue shipped in the application passes every invariant")
     void shippedCatalogueIsValid() {
         // Guard against a green suite that only ever validated hand-built fixtures.
+        Persona analyst = base("analyst", "seed.analyst@voltio.test");
+        analyst.setRole(RoleName.RISK_ANALYST);
+        analyst.setExpectations(expectations(RiskScoreStatus.OK, RiskScoreLevel.MODERATE, true, false));
+
+        Persona observer = base("observer", "seed.observer@voltio.test");
+        observer.setRole(RoleName.COMPLIANCE_AUDIT_OBSERVER);
+        observer.setExpectations(expectations(RiskScoreStatus.OK, RiskScoreLevel.MODERATE, true, false));
+
         PersonaCatalogue catalogue = new PersonaCatalogue();
-        catalogue.setPersonas(List.of(sufficient("salaried"), sparse("sparse"), operations("ops")));
+        catalogue.setPersonas(List.of(sufficient("salaried"), sparse("sparse"), operations("ops"),
+                analyst, observer));
 
         assertThatCode(catalogue::validate).doesNotThrowAnyException();
     }
@@ -92,7 +101,6 @@ class PersonaCatalogueLoadTest {
     void c5TwoGoalsOneAccount() {
         Persona p = sufficient("saver");
         p.setGoals(new ArrayList<>(List.of(goal("main", "First"), goal("main", "Second"))));
-        p.getExpectations().setGoalProgressPercent(new BigDecimal("45.00"));
 
         assertThatThrownBy(() -> validate(p, sparse("sparse"), operations("ops")))
                 .hasMessageContaining("C5");
@@ -128,13 +136,17 @@ class PersonaCatalogueLoadTest {
     }
 
     @Test
-    @DisplayName("C9: goal progress declared with no goal behind it is rejected")
-    void c9GoalProgressWithoutGoal() {
+    @DisplayName("C9: a goal that declares no expected progress is rejected")
+    void c9GoalWithoutExpectedProgress() {
         Persona p = sufficient("salaried");
-        p.getExpectations().setGoalProgressPercent(new BigDecimal("45.00"));
+        SeedGoal g = goal("main", "Emergency fund");
+        g.setExpectedProgressPercent(null);
+        p.setGoals(new ArrayList<>(List.of(g)));
 
-        assertThatThrownBy(() -> validate(p, sparse("sparse"), operations("ops")))
-                .hasMessageContaining("C9");
+        assertThatThrownBy(() -> validate(p, sparse("sparse"), operations("ops"),
+                analyst(), observer()))
+                .hasMessageContaining("C9")
+                .hasMessageContaining("Emergency fund");
     }
 
     @Test
@@ -145,6 +157,32 @@ class PersonaCatalogueLoadTest {
 
         assertThatThrownBy(() -> validate(p, sparse("sparse"), operations("ops")))
                 .hasMessageContaining("C10");
+    }
+
+    @Test
+    @DisplayName("C11: a role with no persona holding it is rejected")
+    void c11RoleWithoutPersona() {
+        // sufficient/sparse/operations cover RETAIL_CUSTOMER and BANK_ADMINISTRATOR only,
+        // so RISK_ANALYST and COMPLIANCE_AUDIT_OBSERVER are uncovered here.
+        assertThatThrownBy(() -> validate(sufficient("salaried"), sparse("sparse"), operations("ops")))
+                .hasMessageContaining("C11")
+                .hasMessageContaining("no persona holds the role");
+    }
+
+    @Test
+    @DisplayName("C11: every role covered passes")
+    void c11AllRolesCovered() {
+        Persona analyst = base("analyst", "seed.analyst@voltio.test");
+        analyst.setRole(RoleName.RISK_ANALYST);
+        analyst.setExpectations(expectations(RiskScoreStatus.OK, RiskScoreLevel.MODERATE, true, false));
+
+        Persona observer = base("observer", "seed.observer@voltio.test");
+        observer.setRole(RoleName.COMPLIANCE_AUDIT_OBSERVER);
+        observer.setExpectations(expectations(RiskScoreStatus.OK, RiskScoreLevel.MODERATE, true, false));
+
+        assertThatCode(() -> validate(sufficient("salaried"), sparse("sparse"),
+                operations("ops"), analyst, observer))
+                .doesNotThrowAnyException();
     }
 
     @Test
@@ -179,7 +217,7 @@ class PersonaCatalogueLoadTest {
         p.setKey(key);
         p.setLogin(login);
         p.setDisplayName("Test Person");
-        p.setRole(RoleName.CUSTOMER);
+        p.setRole(RoleName.RETAIL_CUSTOMER);
         p.setPurpose("fixture");
         p.setScenarios(new ArrayList<>(List.of("some-scenario")));
         p.setAccounts(new ArrayList<>(List.of(account("main"))));
@@ -200,9 +238,23 @@ class PersonaCatalogueLoadTest {
         return p;
     }
 
+    private Persona analyst() {
+        Persona p = base("analyst", "seed.analyst@voltio.test");
+        p.setRole(RoleName.RISK_ANALYST);
+        p.setExpectations(expectations(RiskScoreStatus.OK, RiskScoreLevel.MODERATE, true, false));
+        return p;
+    }
+
+    private Persona observer() {
+        Persona p = base("observer", "seed.observer@voltio.test");
+        p.setRole(RoleName.COMPLIANCE_AUDIT_OBSERVER);
+        p.setExpectations(expectations(RiskScoreStatus.OK, RiskScoreLevel.MODERATE, true, false));
+        return p;
+    }
+
     private Persona operations(String key) {
         Persona p = base(key, "seed." + key.toLowerCase() + "@voltio.test");
-        p.setRole(RoleName.ADMIN);
+        p.setRole(RoleName.BANK_ADMINISTRATOR);
         p.setExpectations(expectations(RiskScoreStatus.OK, RiskScoreLevel.LOW, true, true));
         return p;
     }
@@ -246,6 +298,7 @@ class PersonaCatalogueLoadTest {
         g.setTargetAmount(new BigDecimal("1000.00"));
         g.setTargetDaysAhead(90);
         g.setStatus(SavingsGoalStatus.IN_PROGRESS);
+        g.setExpectedProgressPercent(new BigDecimal("45.00"));
         return g;
     }
 }

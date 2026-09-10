@@ -42,3 +42,12 @@
 - **Confirmed, not re-litigated**: the two iteration-2 defaults survived clarification. Date anchoring is effectively forced by risk scoring deriving its window from the current date, so it was not spent as a question. The re-seed default was extended rather than overturned — per-persona reset (Q3) refines it.
 - **Not verifiable from this repository**: the BRD (Section 1) is not held here, so the three primary persona descriptions come from the feature request text and should be checked against the BRD before planning.
 - **Deferred to planning**: concrete persona values (how many months of history, exact balances and goal amounts), seeding performance, and the catalogue's file format. These are plan-level choices that the requirements already constrain.
+
+- **Iteration 4 (2026-09-10, `/speckit-clarify`)**: 16/16 still passing; no state changes, no regressions. Run *after* implementation rather than before it, because the `justin/feature/springai` merge invalidated assumptions the spec had recorded as settled. Five clarifications integrated:
+  1. **Role coverage** → add one persona per unrepresented role, so all four recognized roles have a seeded identity (FR-001, FR-001a).
+  2. **Verification storage** → seeding tests move to a real PostgreSQL instance with the Flyway-managed schema; the in-memory H2 substitute is dropped (FR-009a, SC-012).
+  3. **`provisionalRole`** → removed from the schema; the gap it bridged has closed (FR-021).
+  4. **Restriction capability** → verified against real authorization rules rather than a hardcoded role name (FR-006, FR-006a).
+  5. **Concurrent shared database** → no locking or per-user partitioning; per-persona scoping plus coordination stands (FR-014, recorded as a knowing decision).
+- **Stale statements corrected without asking**, because the merge made them false rather than ambiguous: the two-role assumption, the role-definition dependency (now marked resolved), the "role-definition story lands mid-flight" edge case, and the Persona entity's provisional-role wording.
+- **These five answers describe rework, not a plan.** The implementation that shipped on 2026-09-07 satisfies the *previous* version of FR-001, FR-006, FR-009 and FR-021. The spec now leads the code.

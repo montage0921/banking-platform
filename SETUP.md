@@ -104,6 +104,11 @@ environments should do it.
 | `goalSaver` | `seed.goalsaver@voltio.test` | Saving toward a near-term goal at 45% progress. Two accounts. |
 | `operations` | `seed.operations@voltio.test` | Administrator. Owns a FROZEN account so restriction workflows can be demonstrated. |
 | `sparse` | `seed.sparse@voltio.test` | Deliberately data-poor. Triggers the chatbot fallback and the risk `INSUFFICIENT_DATA` status. |
+| `riskAnalyst` | `seed.riskanalyst@voltio.test` | Risk Analyst role. Also proves a non-administrator staff role does **not** inherit freeze/unfreeze powers. |
+| `complianceObserver` | `seed.compliance@voltio.test` | Compliance/Audit Observer role, read-only oversight. |
+
+Every role the platform recognizes has a persona holding it, and a catalogue invariant (C11)
+makes that a startup failure if a role is ever added without one.
 
 All four share the password on `PersonaSeeder.SEED_PASSWORD`. These credentials work only
 in non-production environments - seeding refuses to run against a production-shaped
@@ -119,6 +124,17 @@ resetService.resetAll();           // all of them
 
 Reset is scoped per persona on purpose: in a shared QA environment, restoring the persona
 you are working on must not destroy a colleague's half-finished run.
+
+**Running the seed tests requires a live PostgreSQL** on port 5433, because they run against
+the real engine and Flyway-managed schema rather than an in-memory substitute:
+
+```bash
+docker compose up -d pgvector create-banking-core
+cd backend && ./mvnw test -Dtest='com.group1.banking.seed.*Test'
+```
+
+Note the `*Test` suffix in that pattern - `com.group1.banking.seed.*` matches nothing and
+surefire reports success having run zero tests.
 
 Their full definitions - including the expected outcome for each of the four features -
 live in [`backend/src/main/resources/personas/voltio-personas.yaml`](backend/src/main/resources/personas/voltio-personas.yaml).

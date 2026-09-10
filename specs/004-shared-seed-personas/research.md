@@ -13,13 +13,13 @@ Six unknowns blocked the design. All are resolved below. Each finding is grounde
 1. **Opt-in flag**: `app.seed.personas.enabled`, default `false`. The seed runner is annotated `@ConditionalOnProperty(name = "app.seed.personas.enabled", havingValue = "true")`, so with the flag absent the bean is never created and no seeding code runs at all.
 2. **Production refusal**: when the flag *is* true, `SeedGuard` still refuses if any active Spring profile is `prod` or `production`, or if `app.seed.personas.environment` is set to `production`. Refusal throws at startup rather than warning and continuing.
 
-**Rationale**: The codebase has **no `@Profile` annotation anywhere** — a grep across `backend/src/main` returns nothing — so there is no existing profile convention to inherit or accidentally contradict. That absence is the finding: a profile-only guard would rest on a convention this project has not yet established, and would silently pass in every environment because no profile is ever set. The flag is therefore the primary guard and carries the safe default; the profile check is the backstop that catches a production deployment where someone set the flag by mistake.
+**Rationale**: The codebase had **no `@Profile` annotation anywhere** — a grep across `backend/src/main` returns nothing — so there is no existing profile convention to inherit or accidentally contradict. That absence is the finding: a profile-only guard would rest on a convention this project has not yet established, and would silently pass in every environment because no profile is ever set. The flag is therefore the primary guard and carries the safe default; the profile check is the backstop that catches a production deployment where someone set the flag by mistake.
 
 Refusing loudly rather than skipping quietly is what SCR-002 requires: an operator must be able to tell "seeding was prevented" from "seeding is broken". A silent skip produces an environment with no personas, which reads identically to a seeding bug.
 
 **Alternatives considered**:
 - *Profile-only guard (`@Profile("!prod")`)*: rejected. With no profiles set anywhere today, `!prod` is true in production too. It would look like a guard and guard nothing.
-- *Datasource-URL sniffing (refuse if not H2)*: rejected. Couples seeding to a storage choice that the pom already contradicts — MySQL and PostgreSQL drivers are both present, and QA may legitimately run either.
+- *Datasource-URL sniffing (refuse if not H2)*: rejected. Couples seeding to a storage choice, and that choice has since changed — the primary datasource is now PostgreSQL, which would have made such a guard refuse every legitimate environment.
 - *Single combined guard*: rejected during clarification in favour of defense in depth; two independent mechanisms mean one misconfiguration is not sufficient to seed production.
 
 ---
@@ -115,5 +115,5 @@ Tests read expected values through `Personas` rather than binding the YAML indep
 ## Cross-cutting: what this research deliberately did **not** resolve
 
 - **Exact monetary amounts** for each persona. The bands and margins are fixed above; the specific figures are a task-level choice constrained by FR-023 and verified by the validation test.
-- **Whether QA runs H2, MySQL or PostgreSQL.** The design is storage-agnostic — it writes through JPA repositories — so this does not need answering to proceed. It would only matter if seeding used vendor-specific SQL, which it does not.
+- **~~Whether QA runs H2, MySQL or PostgreSQL.~~ Settled 2026-09-10: PostgreSQL.** The design remains storage-agnostic — it writes through JPA repositories and uses no vendor-specific SQL — but verification is no longer storage-agnostic: FR-009a requires the seeding tests to run against the same engine and Flyway-managed schema the application uses, so a live PostgreSQL is now a prerequisite for running them.
 - **Repairing `nextAccountId()`.** Named in R5 as pre-existing fragility, explicitly out of scope, and left as a `ponytail:`-style note for whoever owns account creation.

@@ -146,7 +146,7 @@ So the migration is T027–T030: one genuine fixture deletion, two vague referen
 
 ### Documentation migration (no test migration required — see findings above)
 
-- [~] T033 [P] [US4] Delete the hardcoded fixture block in `specs/001-savings-goals/quickstart.md` — the `-- Assume test customer exists` SQL with `customer_id = 1` and `account_id = 100/101/102` — and replace it with a reference to the goalSaver persona by its reserved login, linking to [contracts/persona-catalogue.md](./contracts/persona-catalogue.md). This is the one genuine fixture in the repository and the primary target of this migration **PARTIAL — do not mark complete.** Only the Test Data preamble was migrated. All ten scenarios still reference ACC-00100/00101/00102 and absolute dates (lines 83, 112, 134, 172, 195, 220, 261, 334, 371, 410–426 — about 25 references). They are blocked on persona coverage, not on effort: Scenario 2 needs a goal that is already OVERDUE (goalSaver’s target date is 90 days ahead) and Scenarios 4/9 need a third account. Unblock by adding those accounts to the catalogue, then finish this task.
+- [X] T033 [P] [US4] Delete the hardcoded fixture block in `specs/001-savings-goals/quickstart.md` — the `-- Assume test customer exists` SQL with `customer_id = 1` and `account_id = 100/101/102` — and replace it with a reference to the goalSaver persona by its reserved login, linking to [contracts/persona-catalogue.md](./contracts/persona-catalogue.md). This is the one genuine fixture in the repository and the primary target of this migration **COMPLETE.** Preamble migrated in the original pass; the remaining 23 scenario references and all absolute dates were migrated in Phase 8 (T057), once T056 added the overdue goal and third account they were blocked on.
 - [X] T034 [P] [US4] Replace the vague "log in as a seeded customer with at least two open accounts" in `specs/002-agent-confirmation-gate/plan.md` (manual smoke test, around line 1672) with the named persona that actually has two open accounts, so the smoke test stops depending on whatever data happens to be present
 - [X] T035 [P] [US4] Update `specs/003-agent-multistep-gic-rates/quickstart.md` to name the specific persona for its `chat_interaction_log` verification step instead of the generic "that customer"
 - [X] T036 [US4] Record in `specs/001-savings-goals/contracts/ErrorCodes.md` — as a short note, not a rewrite — that its `account_id: 42` / `customer_id: 100` values are illustrative fields in example error payloads documenting response shape, **not** fixtures, and are deliberately left alone. This closes the question rather than leaving the next reader to re-open it
@@ -283,3 +283,62 @@ inherited by both.
 - Drift detection verified for real (T032): the goal saver's balance was changed to 3000.00,
   `PersonaCatalogueValidationTest` failed naming the persona and both values, and the change was
   reverted.
+
+---
+
+## Phase 8: Convergence
+
+*Appended by `/speckit-converge` on 2026-09-10. These close the gap between the code as it
+stands and the spec as it stands after the 2026-09-10 clarification session. The
+implementation shipped on 2026-09-07 satisfied the previous wording of FR-001, FR-006,
+FR-009 and FR-021; the `justin/feature/springai` merge and the clarifications that followed
+moved the target. Every task below traces to a requirement, not to a preference.*
+
+- [X] T043 Remove the `provisionalRole` field from `backend/src/main/java/com/group1/banking/seed/PersonaCatalogue.java`, delete the three redundant `provisionalRole:` entries from `backend/src/main/resources/personas/voltio-personas.yaml` (lines 29, 96, 244), and remove it from the schema block, worked example and field tables in `specs/004-shared-seed-personas/contracts/persona-catalogue.md` and `specs/004-shared-seed-personas/data-model.md` per FR-021 (contradicts). Constitution I requires the contract and its consumers change together, so all five files move in one commit
+- [X] T044 Add a risk-analyst persona to `backend/src/main/resources/personas/voltio-personas.yaml` holding `role: RISK_ANALYST`, with a written purpose, its own accounts, and an `expectations` block, per FR-001 and FR-001a (missing). Give it data of its own rather than sharing another persona's, so it stays independently resettable
+- [X] T045 Add a compliance/audit-observer persona to `backend/src/main/resources/personas/voltio-personas.yaml` holding `role: COMPLIANCE_AUDIT_OBSERVER`, same shape as T044, per FR-001 and FR-001a (missing)
+- [X] T046 Add a catalogue invariant to `PersonaCatalogue.validate()` requiring every `RoleName` value to be held by at least one persona, per FR-001a (missing). Name the uncovered role in the failure message. This makes adding a role without adding a persona a startup failure rather than a silent coverage gap - the exact situation this convergence pass exists to fix
+- [X] T047 Add a test method to `backend/src/test/java/com/group1/banking/seed/PersonaCatalogueLoadTest.java` covering the new role-coverage invariant from T046, following the one-test-per-invariant pattern already established there for C1-C10
+- [X] T048 Replace the hardcoded `user.getRoles().contains(RoleName.BANK_ADMINISTRATOR)` check in `restrictionCapabilityMatchesCatalogue` (`backend/src/test/java/com/group1/banking/seed/PersonaCatalogueValidationTest.java:181`) with a check against the platform's actual authorization rules, per FR-006a (contradicts). A permissions change that grants or revokes restriction powers must surface here as a catalogue mismatch naming the persona
+- [X] T049 Convert `backend/src/test/java/com/group1/banking/seed/SeedTestBase.java` from the in-memory H2 override to a real PostgreSQL datasource carrying the Flyway-managed V001 schema, per FR-009a and SC-012 (contradicts). Remove the `spring.datasource.url=jdbc:h2:mem:...`, `ddl-auto=create-drop` and `spring.flyway.enabled=false` properties. All five subclasses inherit this: `PersonaCatalogueValidationTest`, `PersonaDeterminismTest`, `PersonaResetScopeTest`, `PersonaSeedingTest`, `SparsePersonaThresholdTest`
+- [X] T050 Convert `backend/src/test/java/com/group1/banking/seed/SeedDefaultOffTest.java` the same way per FR-009a and SC-012 (contradicts). It declares its own `@TestPropertySource` rather than extending `SeedTestBase`, so T049 does not cover it
+- [X] T051 Ensure each converted test starts from a known database state, since `ddl-auto=create-drop` no longer rebuilds the schema per run and the seed tests mutate data deliberately (FR-009, FR-012). `PersonaResetScopeTest` in particular asserts on mutations it makes, so leftover state from a previous run would make it pass or fail for the wrong reason
+- [X] T052 Document how to run the seed tests now that they require a live PostgreSQL, in `specs/004-shared-seed-personas/quickstart.md` and `SETUP.md` (FR-009a). The `pgvector` and `create-banking-core` services in `docker-compose.yml` already provide one; state that no database means no seed tests, including in CI - that is the accepted cost of testing against the real engine
+- [X] T053 Update the Technical Context in `specs/004-shared-seed-personas/plan.md` (line 19) from H2 file mode with `ddl-auto=update` to PostgreSQL with `ddl-auto=validate` and the Flyway-managed V001 baseline, per plan: storage decision (contradicts). `/speckit-converge` is append-only and did not edit the plan itself
+- [X] T054 Update the H2 references in `specs/004-shared-seed-personas/quickstart.md` (4 occurrences, including the `rm -rf ./data/digitalbankdb*` clean-slate step and the h2-console verification instructions) and `specs/004-shared-seed-personas/research.md` (2 occurrences) to the PostgreSQL workflow (contradicts)
+- [X] T055 Remove the unused `percent()` helper at `backend/src/test/java/com/group1/banking/seed/PersonaCatalogueValidationTest.java:262`, marked `@SuppressWarnings("unused")` and called by nothing (unrequested)
+- [X] T056 Extend the `goalSaver` persona in `backend/src/main/resources/personas/voltio-personas.yaml` with a third account and a second, already-overdue goal, to unblock T033 per FR-008 (partial). An overdue goal needs a negative `targetDaysAhead`; `PersonaDateAnchor.daysAhead` already handles it via `plusDays`, but `specs/004-shared-seed-personas/contracts/persona-catalogue.md` does not say negatives are permitted, so document that. Two constraints interact here: invariant C5 allows one goal per account, so the overdue goal needs its own account; and `Expectations.goalProgressPercent` is a single value while `goalProgressMatchesCatalogue` reads `goals.get(0)`, which becomes order-dependent with two goals - decide whether the expectation becomes per-goal or the assertion resolves goals by name, and update the contract to match
+- [X] T057 Finish T033 by migrating the remaining 23 `ACC-001xx` references and absolute dates in `specs/001-savings-goals/quickstart.md` to the seeded personas per FR-008 (partial). T033 migrated only the Test Data preamble; all ten scenarios still name hardcoded accounts (lines 83, 112, 134, 172, 195, 220, 261, 334, 371, 410-426). Blocked on T056: Scenario 2 needs the overdue goal, Scenarios 4 and 9 need the third account. Leave T033 marked `[~]` until this lands, then mark both complete
+- [X] T058 Run `cd backend && ./mvnw test -Dtest='com.group1.banking.seed.*Test'` and confirm all seed tests pass against PostgreSQL. Note the pattern needs the `*Test` suffix - `com.group1.banking.seed.*` matches nothing and surefire reports success having run zero tests
+- [X] T059 Run the full suite and confirm no new regressions beyond the six failures already present on this branch before this phase began: one each in `AccountServiceTest`, `StandingOrderServiceTest`, `TransactionHistoryServiceTest`, `RiskScoreServiceInsufficientDataTest`, and two in `SavingsGoalServiceTest`. All six pre-date this work and are unrelated to seeding
+
+
+### Phase 8 implementation notes
+
+All 17 tasks complete; T033 unblocked and closed. Three decisions taken while implementing:
+
+1. **T056's design wrinkle resolved by moving the expectation, not the assertion.**
+   `goalProgressPercent` left `Expectations` and became `expectedProgressPercent` on `SeedGoal`.
+   A per-persona value would have had to be matched to a goal by list position, which is not a
+   stable key; declaring it on the goal removes the ambiguity instead of working around it. C9
+   changed accordingly - it now requires every goal to declare its own expected progress - and
+   the validation test matches goals by name.
+
+2. **C11 runs last, after C6 and C7.** Placed earlier it would have hijacked the `c7NoOperationsPersona`
+   test's expected message, since a catalogue missing the operations persona is also missing a
+   role. Ordering invariants from most specific to most general keeps failure messages useful.
+
+3. **`goalSaver` gained a third account rather than a second goal on an existing one.** Invariant
+   C5 permits one goal per account, so the overdue goal needed its own. `targetDaysAhead: -30`
+   makes it overdue on every run without waiting for a date to pass; `PersonaDateAnchor.daysAhead`
+   already handled negatives via `plusDays`, and the contract now says so explicitly.
+
+**Two stale assertions of my own** surfaced when the persona count went from 4 to 6:
+`PersonaSeedingTest.allPersonasSeeded` froze the exact key set and `SeedDefaultOffTest.catalogueLoadsRegardless`
+hardcoded `hasSize(4)`. Both were rewritten to assert containment and to derive the expected
+minimum from `RoleName.values().length`, so adding a persona is no longer a test failure -
+only losing one is.
+
+**Test results**: 59 seed tests passing against real PostgreSQL (up from 55 on H2). Full suite
+744 tests, 6 failures - the same six pre-existing failures documented in T059, unchanged in
+count and location. No new regressions.

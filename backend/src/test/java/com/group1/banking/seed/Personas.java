@@ -28,6 +28,8 @@ public class Personas {
     public static final String GOAL_SAVER = "goalSaver";
     public static final String OPERATIONS = "operations";
     public static final String SPARSE = "sparse";
+    public static final String RISK_ANALYST = "riskAnalyst";
+    public static final String COMPLIANCE_OBSERVER = "complianceObserver";
 
     @Autowired
     private PersonaCatalogue catalogue;

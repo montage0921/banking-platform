@@ -42,9 +42,13 @@ class PersonaSeedingTest extends SeedTestBase {
     @Test
     @DisplayName("all four personas are present and resolvable by their reserved login")
     void allPersonasSeeded() {
+        // The named four are the committed baseline; the catalogue may hold more, and does
+        // now that every role needs a persona. Asserting containment rather than an exact
+        // set means adding a persona is not a test failure - only losing one is.
         assertThat(catalogue.keys())
-                .containsExactlyInAnyOrder(Personas.SALARIED, Personas.GOAL_SAVER,
-                        Personas.OPERATIONS, Personas.SPARSE);
+                .contains(Personas.SALARIED, Personas.GOAL_SAVER,
+                        Personas.OPERATIONS, Personas.SPARSE,
+                        Personas.RISK_ANALYST, Personas.COMPLIANCE_OBSERVER);
 
         for (Persona persona : catalogue.getPersonas()) {
             assertThat(userRepository.findByUsernameIgnoreCase(persona.getLogin()))
@@ -90,7 +94,7 @@ class PersonaSeedingTest extends SeedTestBase {
         Persona operations = catalogue.byKey(Personas.OPERATIONS);
         User user = userRepository.findByUsernameIgnoreCase(operations.getLogin()).orElseThrow();
 
-        assertThat(user.getRoles()).contains(RoleName.ADMIN);
+        assertThat(user.getRoles()).contains(RoleName.BANK_ADMINISTRATOR);
         assertThat(accountsOf(operations))
                 .as("a frozen account of its own, so unfreezing does not disturb another persona")
                 .anyMatch(a -> a.getStatus() == AccountStatus.FROZEN);

@@ -3,7 +3,6 @@ package com.group1.banking.seed;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -25,7 +24,9 @@ import com.group1.banking.repository.AccountRepository;
 import com.group1.banking.repository.SavingsGoalRepository;
 import com.group1.banking.repository.TransactionRepository;
 import com.group1.banking.repository.UserRepository;
+import com.group1.banking.security.CustomUserPrincipal;
 import com.group1.banking.seed.PersonaCatalogue.Persona;
+import com.group1.banking.seed.PersonaCatalogue.SeedGoal;
 import com.group1.banking.service.impl.SavingsChatContextService;
 
 /**
@@ -61,6 +62,13 @@ class PersonaCatalogueValidationTest extends SeedTestBase {
 
     @Value("${app.chatbot.transactions.lookback-days:30}")
     private int lookbackDays;
+
+    /**
+     * The authority the application actually checks before allowing an account restriction -
+     * see {@code OwnershipService} and {@code AccountService}. Named here once so the coupling
+     * to authorization is explicit rather than scattered through assertions.
+     */
+    private static final String RESTRICTION_AUTHORITY = "ROLE_" + RoleName.BANK_ADMINISTRATOR.name();
 
     @Test
     @DisplayName("every persona in the catalogue is actually seeded")
@@ -124,26 +132,55 @@ class PersonaCatalogueValidationTest extends SeedTestBase {
     @DisplayName("goal progress recomputes to the declared percentage")
     void goalProgressMatchesCatalogue() {
         for (Persona persona : catalogue.getPersonas()) {
-            BigDecimal declared = persona.getExpectations().getGoalProgressPercent();
-            List<SavingsGoal> goals = goalsOf(persona);
+            List<SavingsGoal> seeded = goalsOf(persona);
 
-            if (declared == null) {
-                assertThat(goals)
-                        .as("persona '%s' declares no goal progress, so it should have no goals",
-                                persona.getKey())
-                        .isEmpty();
-                continue;
+            assertThat(seeded)
+                    .as("persona '%s' should have one seeded goal per catalogue goal", persona.getKey())
+                    .hasSize(persona.getGoals().size());
+
+            // Matched by name, not by list position - a persona may hold several goals and
+            // database ordering is not a stable key.
+            for (SeedGoal declared : persona.getGoals()) {
+                SavingsGoal goal = seeded.stream()
+                        .filter(g -> g.getGoalName().equals(declared.getName()))
+                        .findFirst()
+                        .orElseThrow(() -> new AssertionError("persona '" + persona.getKey()
+                                + "' has no seeded goal named '" + declared.getName() + "'"));
+
+                BigDecimal balance = accountRepository.findById(goal.getAccount().getAccountId())
+                        .orElseThrow().getBalance();
+                BigDecimal actual = PersonaSeeder.goalProgressPercent(balance, goal.getTargetAmount());
+
+                assertThat(actual)
+                        .as("persona '%s' goal '%s' declares %s%% progress; balance %s of target "
+                                + "%s gives %s%%", persona.getKey(), declared.getName(),
+                                declared.getExpectedProgressPercent(), balance,
+                                goal.getTargetAmount(), actual)
+                        .isEqualByComparingTo(declared.getExpectedProgressPercent());
             }
+        }
+    }
 
-            SavingsGoal goal = goals.get(0);
-            BigDecimal balance = accountRepository.findById(goal.getAccount().getAccountId())
-                    .orElseThrow().getBalance();
-            BigDecimal actual = PersonaSeeder.goalProgressPercent(balance, goal.getTargetAmount());
+    @Test
+    @DisplayName("a goal with a past target date is seeded as genuinely overdue")
+    void overdueGoalIsActuallyOverdue() {
+        // The overdue path needs a goal that is already late on every run, not one that
+        // becomes late if a test happens to run slowly.
+        for (Persona persona : catalogue.getPersonas()) {
+            for (SeedGoal declared : persona.getGoals()) {
+                if (declared.getTargetDaysAhead() >= 0) {
+                    continue;
+                }
+                SavingsGoal goal = goalsOf(persona).stream()
+                        .filter(g -> g.getGoalName().equals(declared.getName()))
+                        .findFirst().orElseThrow();
 
-            assertThat(actual)
-                    .as("persona '%s' declares %s%% progress; balance %s of target %s gives %s%%",
-                            persona.getKey(), declared, balance, goal.getTargetAmount(), actual)
-                    .isEqualByComparingTo(declared);
+                assertThat(goal.getTargetDate())
+                        .as("persona '%s' goal '%s' declares targetDaysAhead=%d, so its seeded "
+                                + "target date must already have passed", persona.getKey(),
+                                declared.getName(), declared.getTargetDaysAhead())
+                        .isBefore(java.time.LocalDate.now(java.time.ZoneOffset.UTC));
+            }
         }
     }
 
@@ -158,33 +195,55 @@ class PersonaCatalogueValidationTest extends SeedTestBase {
         BigDecimal minimumMargin = new BigDecimal("5");
 
         for (Persona persona : catalogue.getPersonas()) {
-            BigDecimal progress = persona.getExpectations().getGoalProgressPercent();
-            if (progress == null) {
-                continue;
-            }
-            for (BigDecimal boundary : boundaries) {
-                BigDecimal distance = progress.subtract(boundary).abs();
-                assertThat(distance)
-                        .as("persona '%s' progress %s%% is only %s from the %s%% band boundary; "
-                                + "move it toward the middle of its band",
-                                persona.getKey(), progress, distance, boundary)
-                        .isGreaterThanOrEqualTo(minimumMargin);
+            for (SeedGoal declared : persona.getGoals()) {
+                BigDecimal progress = declared.getExpectedProgressPercent();
+                for (BigDecimal boundary : boundaries) {
+                    BigDecimal distance = progress.subtract(boundary).abs();
+                    assertThat(distance)
+                            .as("persona '%s' goal '%s' progress %s%% is only %s from the %s%% "
+                                    + "band boundary; move it toward the middle of its band",
+                                    persona.getKey(), declared.getName(), progress, distance, boundary)
+                            .isGreaterThanOrEqualTo(minimumMargin);
+                }
             }
         }
     }
 
     @Test
-    @DisplayName("restriction-management capability matches the seeded role")
+    @DisplayName("restriction-management capability matches what authorization actually grants")
     void restrictionCapabilityMatchesCatalogue() {
+        // Derived, not hardcoded. Building a real CustomUserPrincipal routes through the same
+        // role-to-authority mapping the application uses, so if restriction powers are granted
+        // to another role or taken away from Bank Administrator, this fails and names the
+        // persona - instead of silently passing because a role constant still matches.
         for (Persona persona : catalogue.getPersonas()) {
             User user = userRepository.findByUsernameIgnoreCase(persona.getLogin()).orElseThrow();
-            boolean isAdmin = user.getRoles().contains(RoleName.ADMIN);
+            boolean granted = new CustomUserPrincipal(user).getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals(RESTRICTION_AUTHORITY));
 
-            assertThat(isAdmin)
-                    .as("persona '%s' declares canManageRestrictions=%s, so its seeded role must agree",
-                            persona.getKey(), persona.getExpectations().isCanManageRestrictions())
+            assertThat(granted)
+                    .as("persona '%s' declares canManageRestrictions=%s; authorization grants "
+                            + "restriction management via the '%s' authority",
+                            persona.getKey(), persona.getExpectations().isCanManageRestrictions(),
+                            RESTRICTION_AUTHORITY)
                     .isEqualTo(persona.getExpectations().isCanManageRestrictions());
         }
+    }
+
+    @Test
+    @DisplayName("at least one persona can manage restrictions, and not every persona can")
+    void restrictionCapabilityIsDiscriminating() {
+        long canManage = catalogue.getPersonas().stream()
+                .filter(p -> p.getExpectations().isCanManageRestrictions())
+                .count();
+
+        assertThat(canManage)
+                .as("restriction management needs an actor (FR-006)")
+                .isGreaterThanOrEqualTo(1);
+        assertThat(canManage)
+                .as("if every persona could manage restrictions the check would prove nothing - "
+                        + "the non-administrator staff roles exist partly to hold this line")
+                .isLessThan(catalogue.getPersonas().size());
     }
 
     @Test
@@ -256,11 +315,5 @@ class PersonaCatalogueValidationTest extends SeedTestBase {
 
     private List<Account> accountsOf(Persona persona) {
         return accountRepository.findAllByCustomerCustomerId(personas.customerIdOf(persona.getKey()));
-    }
-
-    /** Kept for readability of the progress assertions above. */
-    @SuppressWarnings("unused")
-    private BigDecimal percent(BigDecimal part, BigDecimal whole) {
-        return part.multiply(BigDecimal.valueOf(100)).divide(whole, 2, RoundingMode.HALF_UP);
     }
 }

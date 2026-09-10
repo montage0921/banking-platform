@@ -25,8 +25,7 @@ Records bound from [contracts/persona-catalogue.md](./contracts/persona-catalogu
 | `key` | `String` | Stable symbolic name (`salaried`, `goalSaver`, `operations`, `sparse`). The reset scope unit (FR-014) and how tests name a persona. |
 | `login` | `String` | The reserved login identity — the natural business key (FR-002). Must match the convention in FR-003. |
 | `displayName` | `String` | Fictional person name (FR-022) |
-| `role` | `RoleName` | `CUSTOMER` or `ADMIN` — today's only two roles |
-| `provisionalRole` | `String` | Intended target role, unenforced (FR-021). E.g. `RISK_ANALYST`. |
+| `role` | `RoleName` | Exactly one of the four recognized roles; no provisional second role (FR-021) |
 | `purpose` | `String` | Why this persona exists; read by humans, never asserted on |
 | `scenarios` | `List<String>` | Which scenarios touch this persona (FR-016), so overlap is visible before a reset |
 | `accounts` | `List<SeedAccount>` | |
