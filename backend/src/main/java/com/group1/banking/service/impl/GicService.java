@@ -89,7 +89,7 @@ public class GicService {
 
         GicInvestment saved = gicRepository.save(gic);
 
-        RoleName actorRole = isAdmin(user) ? RoleName.ADMIN : RoleName.CUSTOMER;
+        RoleName actorRole = isAdmin(user) ? RoleName.BANK_ADMINISTRATOR : RoleName.RETAIL_CUSTOMER;
         auditService.log(AuditEventType.GIC_CREATED,
             "gic",
             actorRole,
@@ -144,7 +144,7 @@ public class GicService {
         gic.setDeletedAt(Instant.now());
         gicRepository.save(gic);
 
-        RoleName actorRole2 = isAdmin(user) ? RoleName.ADMIN : RoleName.CUSTOMER;
+        RoleName actorRole2 = isAdmin(user) ? RoleName.BANK_ADMINISTRATOR : RoleName.RETAIL_CUSTOMER;
         auditService.log(AuditEventType.GIC_REDEEMED,
             "gic",
             actorRole2,
@@ -197,7 +197,7 @@ public class GicService {
 
     private boolean isAdmin(User user) {
         return user.getRoles().stream()
-                .anyMatch(r -> r.name().equalsIgnoreCase("ADMIN") || r.name().equalsIgnoreCase("ROLE_ADMIN"));
+                .anyMatch(r -> r.name().equalsIgnoreCase("BANK_ADMINISTRATOR") || r.name().equalsIgnoreCase("ROLE_BANK_ADMINISTRATOR"));
     }
 
     // endregion

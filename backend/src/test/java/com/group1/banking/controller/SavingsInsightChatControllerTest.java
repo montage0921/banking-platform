@@ -54,9 +54,8 @@ class SavingsInsightChatControllerTest {
                 "Based on your dining spend over the last 30 days, you could save by cooking in more.",
                 List.of("Your recent transaction history", "Savings knowledge base: 04-reducing-discretionary-spend.md"),
                 false, false);
-        // @WithCustomUser always assigns RoleName.CUSTOMER (see its Factory), so the
-        // controller's principal -> actorRole extraction resolves to "CUSTOMER" here.
-        when(savingsInsightChatService.ask(eq(42L), eq("CUSTOMER"), any())).thenReturn(serviceResponse);
+        // @WithCustomUser uses the retail customer role, so actor extraction resolves to that value.
+        when(savingsInsightChatService.ask(eq(42L), eq("RETAIL_CUSTOMER"), any())).thenReturn(serviceResponse);
 
         mockMvc.perform(post("/api/chat/savings-insights")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -67,7 +66,7 @@ class SavingsInsightChatControllerTest {
                 .andExpect(jsonPath("$.blocked").value(false))
                 .andExpect(jsonPath("$.based_on").isArray());
 
-        verify(savingsInsightChatService).ask(eq(42L), eq("CUSTOMER"), eq("How can I save more on dining out?"));
+        verify(savingsInsightChatService).ask(eq(42L), eq("RETAIL_CUSTOMER"), eq("How can I save more on dining out?"));
     }
 
     @Test

@@ -11,7 +11,7 @@ public class OwnershipService {
             return false;
         }
         boolean isAdmin = principal.getAuthorities().stream()
-                .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_BANK_ADMINISTRATOR"));
         return isAdmin || (principal.getCustomerId() != null && principal.getCustomerId().equals(customerId));
     }
 }

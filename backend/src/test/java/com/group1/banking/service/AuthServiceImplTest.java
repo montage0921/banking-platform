@@ -59,7 +59,7 @@ class AuthServiceImplTest {
         savedUser.setUserId(UUID.randomUUID());
         savedUser.setUsername("test@example.com");
         savedUser.setPasswordHash("hashed_password");
-        savedUser.setRoles(List.of(RoleName.CUSTOMER));
+        savedUser.setRoles(List.of(RoleName.RETAIL_CUSTOMER));
         savedUser.setActive(true);
 
         userResponse = new UserResponse();
@@ -130,7 +130,7 @@ class AuthServiceImplTest {
         when(passwordEncoder.encode(anyString())).thenReturn("hashed");
         when(userRepository.save(any(User.class))).thenAnswer(inv -> {
             User u = inv.getArgument(0);
-            assertThat(u.getRoles()).containsExactly(RoleName.CUSTOMER);
+            assertThat(u.getRoles()).containsExactly(RoleName.RETAIL_CUSTOMER);
             return savedUser;
         });
         when(userMapper.toResponse(any())).thenReturn(userResponse);
@@ -144,13 +144,13 @@ class AuthServiceImplTest {
         RegisterRequest req = new RegisterRequest();
         req.setUsername("admin@example.com");
         req.setPassword("Secure@123");
-        req.setRoles(List.of(RoleName.ADMIN));
+        req.setRoles(List.of(RoleName.BANK_ADMINISTRATOR));
 
         when(userRepository.existsByUsernameIgnoreCase(anyString())).thenReturn(false);
         when(passwordEncoder.encode(anyString())).thenReturn("hashed");
         when(userRepository.save(any(User.class))).thenAnswer(inv -> {
             User u = inv.getArgument(0);
-            assertThat(u.getRoles()).containsExactly(RoleName.ADMIN);
+            assertThat(u.getRoles()).containsExactly(RoleName.BANK_ADMINISTRATOR);
             return savedUser;
         });
         when(userMapper.toResponse(any())).thenReturn(userResponse);
@@ -264,7 +264,7 @@ class AuthServiceImplTest {
     @Test
     void assertCanAccessCustomer_shouldPass_whenAdmin() {
         com.group1.banking.security.AuthenticatedUser adminUser =
-                new com.group1.banking.security.AuthenticatedUser("u1", 10L, List.of("ADMIN"), List.of());
+                new com.group1.banking.security.AuthenticatedUser("u1", 10L, List.of("BANK_ADMINISTRATOR"), List.of());
 
         // Should not throw
         authService.assertCanAccessCustomer(adminUser, 99L);
@@ -273,7 +273,7 @@ class AuthServiceImplTest {
     @Test
     void assertCanAccessCustomer_shouldPass_whenCustomerOwnsResource() {
         com.group1.banking.security.AuthenticatedUser customerUser =
-                new com.group1.banking.security.AuthenticatedUser("u1", 42L, List.of("CUSTOMER"), List.of());
+                new com.group1.banking.security.AuthenticatedUser("u1", 42L, List.of("RETAIL_CUSTOMER"), List.of());
 
         // Should not throw
         authService.assertCanAccessCustomer(customerUser, 42L);
@@ -282,7 +282,7 @@ class AuthServiceImplTest {
     @Test
     void assertCanAccessCustomer_shouldThrow_whenCustomerDoesNotOwnResource() {
         com.group1.banking.security.AuthenticatedUser customerUser =
-                new com.group1.banking.security.AuthenticatedUser("u1", 42L, List.of("CUSTOMER"), List.of());
+                new com.group1.banking.security.AuthenticatedUser("u1", 42L, List.of("RETAIL_CUSTOMER"), List.of());
 
         assertThatThrownBy(() -> authService.assertCanAccessCustomer(customerUser, 99L))
                 .isInstanceOf(UnauthorisedException.class);
@@ -297,7 +297,7 @@ class AuthServiceImplTest {
     @Test
     void assertCanAccessCustomer_shouldThrow_whenCustomerIdIsNull() {
         com.group1.banking.security.AuthenticatedUser customerUser =
-                new com.group1.banking.security.AuthenticatedUser("u1", null, List.of("CUSTOMER"), List.of());
+                new com.group1.banking.security.AuthenticatedUser("u1", null, List.of("RETAIL_CUSTOMER"), List.of());
 
         assertThatThrownBy(() -> authService.assertCanAccessCustomer(customerUser, 42L))
                 .isInstanceOf(UnauthorisedException.class);
@@ -308,7 +308,7 @@ class AuthServiceImplTest {
     @Test
     void assertCanAccessAccount_shouldPass_whenAdmin() {
         com.group1.banking.security.AuthenticatedUser adminUser =
-                new com.group1.banking.security.AuthenticatedUser("u1", null, List.of("ADMIN"), List.of());
+                new com.group1.banking.security.AuthenticatedUser("u1", null, List.of("BANK_ADMINISTRATOR"), List.of());
 
         Customer customer = new Customer();
         customer.setCustomerId(42L);
@@ -322,7 +322,7 @@ class AuthServiceImplTest {
     @Test
     void assertCanAccessAccount_shouldThrow_whenCustomerDoesNotOwnAccount() {
         com.group1.banking.security.AuthenticatedUser customerUser =
-                new com.group1.banking.security.AuthenticatedUser("u1", 10L, List.of("CUSTOMER"), List.of());
+                new com.group1.banking.security.AuthenticatedUser("u1", 10L, List.of("RETAIL_CUSTOMER"), List.of());
 
         Customer customer = new Customer();
         customer.setCustomerId(42L);

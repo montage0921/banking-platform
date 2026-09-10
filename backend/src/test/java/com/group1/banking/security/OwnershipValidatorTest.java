@@ -52,9 +52,9 @@ class OwnershipValidatorTest {
         account.setBalance(new BigDecimal("500.00"));
 
         customerCaller = new UserPrincipal("uuid-customer", "jane@example.com",
-                List.of("CUSTOMER"), List.of("CUSTOMER_READ"), 42L);
+                List.of("RETAIL_CUSTOMER"), List.of("CUSTOMER_READ"), 42L);
         adminCaller = new UserPrincipal("uuid-admin", "admin@example.com",
-                List.of("ADMIN"), List.of("CUSTOMER_READ", "CUSTOMER_DELETE"), null);
+                List.of("BANK_ADMINISTRATOR"), List.of("CUSTOMER_READ", "CUSTOMER_DELETE"), null);
     }
 
     @Test
@@ -72,7 +72,7 @@ class OwnershipValidatorTest {
     @Test
     void assertOwnership_shouldThrow_whenCustomerDoesNotOwnAccount() {
         UserPrincipal otherCustomer = new UserPrincipal("uuid-other", "other@example.com",
-                List.of("CUSTOMER"), List.of("CUSTOMER_READ"), 99L);
+                List.of("RETAIL_CUSTOMER"), List.of("CUSTOMER_READ"), 99L);
         when(accountRepository.findById(1001L)).thenReturn(Optional.of(account));
 
         assertThatThrownBy(() -> ownershipValidator.assertOwnership(1001L, otherCustomer))

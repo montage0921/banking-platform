@@ -297,7 +297,7 @@ class AccountControllerTest {
                 AccountStatus.ACTIVE,
                 AccountStatus.FROZEN,
                 "admin-1",
-                "ADMIN",
+                "BANK_ADMINISTRATOR",
                 "Fraud review",
                 null,
                 Instant.now());

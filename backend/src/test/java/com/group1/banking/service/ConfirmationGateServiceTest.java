@@ -29,7 +29,7 @@ import static org.mockito.Mockito.when;
 class ConfirmationGateServiceTest {
 
     private static final Long CUSTOMER_ID = 42L;
-    private static final String ACTOR_ROLE = "CUSTOMER";
+        private static final String ACTOR_ROLE = "RETAIL_CUSTOMER";
 
     private PendingAgentActionRepository repository;
     private AuditService auditService;
@@ -56,7 +56,7 @@ class ConfirmationGateServiceTest {
         assertThat(result.getExpiresAt()).isAfter(LocalDateTime.now());
         assertThat(result.getParametersJson()).contains("fromAccountId");
 
-        verify(auditService).log(eq(AuditEventType.OTHER), eq("AGENT_ACTION_CONFIRMATION"), eq(RoleName.CUSTOMER),
+        verify(auditService).log(eq(AuditEventType.OTHER), eq("AGENT_ACTION_CONFIRMATION"), eq(RoleName.RETAIL_CUSTOMER),
                 eq("42"), eq("PENDING_AGENT_ACTION"), eq(result.getToken()), eq(AuditOutcome.SUCCESS),
                 eq("AGENT_ACTION_PROPOSED:PROPOSED"));
     }
@@ -70,7 +70,7 @@ class ConfirmationGateServiceTest {
         PendingAgentActionEntity result = service.confirmAndConsume("tok-1", CUSTOMER_ID, ACTOR_ROLE);
 
         assertThat(result.getStatus()).isEqualTo(PendingAgentActionStatus.EXECUTED);
-        verify(auditService).log(eq(AuditEventType.OTHER), eq("AGENT_ACTION_CONFIRMATION"), eq(RoleName.CUSTOMER),
+        verify(auditService).log(eq(AuditEventType.OTHER), eq("AGENT_ACTION_CONFIRMATION"), eq(RoleName.RETAIL_CUSTOMER),
                 eq("42"), eq("PENDING_AGENT_ACTION"), eq("tok-1"), eq(AuditOutcome.SUCCESS),
                 eq("AGENT_ACTION_CONFIRMED:CONFIRMED"));
     }
@@ -81,7 +81,7 @@ class ConfirmationGateServiceTest {
 
         assertThatThrownBy(() -> service.confirmAndConsume("missing", CUSTOMER_ID, ACTOR_ROLE))
                 .isInstanceOf(NotFoundException.class);
-        verify(auditService).log(eq(AuditEventType.OTHER), eq("AGENT_ACTION_CONFIRMATION"), eq(RoleName.CUSTOMER),
+        verify(auditService).log(eq(AuditEventType.OTHER), eq("AGENT_ACTION_CONFIRMATION"), eq(RoleName.RETAIL_CUSTOMER),
                 eq("42"), eq("PENDING_AGENT_ACTION"), eq("missing"), eq(AuditOutcome.DENIED),
                 eq("AGENT_ACTION_DENIED:NOT_FOUND"));
     }
@@ -105,7 +105,7 @@ class ConfirmationGateServiceTest {
 
         assertThatThrownBy(() -> service.confirmAndConsume("tok-3", CUSTOMER_ID, ACTOR_ROLE))
                 .isInstanceOf(ConflictException.class);
-        verify(auditService).log(eq(AuditEventType.OTHER), eq("AGENT_ACTION_CONFIRMATION"), eq(RoleName.CUSTOMER),
+        verify(auditService).log(eq(AuditEventType.OTHER), eq("AGENT_ACTION_CONFIRMATION"), eq(RoleName.RETAIL_CUSTOMER),
                 eq("42"), eq("PENDING_AGENT_ACTION"), eq("tok-3"), eq(AuditOutcome.DENIED),
                 eq("AGENT_ACTION_DENIED:ALREADY_RESOLVED"));
     }
@@ -119,7 +119,7 @@ class ConfirmationGateServiceTest {
         assertThatThrownBy(() -> service.confirmAndConsume("tok-4", CUSTOMER_ID, ACTOR_ROLE))
                 .isInstanceOf(GoneException.class);
         assertThat(pending.getStatus()).isEqualTo(PendingAgentActionStatus.EXPIRED);
-        verify(auditService).log(eq(AuditEventType.OTHER), eq("AGENT_ACTION_CONFIRMATION"), eq(RoleName.CUSTOMER),
+        verify(auditService).log(eq(AuditEventType.OTHER), eq("AGENT_ACTION_CONFIRMATION"), eq(RoleName.RETAIL_CUSTOMER),
                 eq("42"), eq("PENDING_AGENT_ACTION"), eq("tok-4"), eq(AuditOutcome.DENIED),
                 eq("AGENT_ACTION_DENIED:EXPIRED"));
     }

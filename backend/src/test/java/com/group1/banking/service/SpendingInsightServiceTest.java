@@ -21,10 +21,7 @@ import org.mockito.quality.Strictness;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.Year;
 import java.time.YearMonth;
-import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -69,7 +66,7 @@ class SpendingInsightServiceTest {
         customerUser.setUserId(UUID.randomUUID());
         customerUser.setUsername("customer@test.com");
         customerUser.setCustomerId(42L);
-        customerUser.setRoles(List.of(RoleName.CUSTOMER));
+        customerUser.setRoles(List.of(RoleName.RETAIL_CUSTOMER));
         customerUser.setActive(true);
 
         customerPrincipal = new CustomUserPrincipal(customerUser);
@@ -241,7 +238,7 @@ class SpendingInsightServiceTest {
     void getInsights_shouldWork_whenAdminRole() {
         User adminUser = new User();
         adminUser.setUserId(UUID.randomUUID());
-        adminUser.setRoles(List.of(RoleName.ADMIN));
+        adminUser.setRoles(List.of(RoleName.BANK_ADMINISTRATOR));
         adminUser.setActive(true);
         CustomUserPrincipal adminPrincipal = new CustomUserPrincipal(adminUser);
 

@@ -47,7 +47,7 @@ class AuthCustomerIntegrationTest {
         HashMap<String, Object> registerBody = new HashMap<>();
         registerBody.put("username", "admin@fdmgroup.com");
         registerBody.put("password", "Secure@123");
-        registerBody.put("roles", new String[]{"ADMIN"});
+        registerBody.put("roles", new String[]{"BANK_ADMINISTRATOR"});
 
         String registerResponse = mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -59,7 +59,7 @@ class AuthCustomerIntegrationTest {
 
         JsonNode registerJson = objectMapper.readTree(registerResponse);
         assertThat(registerJson.get("username").asText()).isEqualTo("admin@fdmgroup.com");
-        assertThat(registerJson.get("roles").get(0).asText()).isEqualTo("ADMIN");
+        assertThat(registerJson.get("roles").get(0).asText()).isEqualTo("BANK_ADMINISTRATOR");
 
         // 2. Login
         HashMap<String, Object> loginBody = new HashMap<>();
@@ -163,7 +163,7 @@ class AuthCustomerIntegrationTest {
         HashMap<String, Object> registerBody = new HashMap<>();
         registerBody.put("username", "admin2@fdmgroup.com");
         registerBody.put("password", "Secure@123");
-        registerBody.put("roles", new String[]{"ADMIN"});
+        registerBody.put("roles", new String[]{"BANK_ADMINISTRATOR"});
 
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -221,7 +221,7 @@ class AuthCustomerIntegrationTest {
         HashMap<String, Object> registerBody = new HashMap<>();
         registerBody.put("username", "admin3@fdmgroup.com");
         registerBody.put("password", "Secure@123");
-        registerBody.put("roles", new String[]{"ADMIN"});
+        registerBody.put("roles", new String[]{"BANK_ADMINISTRATOR"});
 
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)

@@ -25,7 +25,7 @@ public class RiskScoreController {
     }
 
     // admin-only
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('BANK_ADMINISTRATOR')")
     @PostMapping("customers/{id}")
     public ResponseEntity<RiskScoreResponse> calculateRiskScore(@PathVariable Long id,
             @AuthenticationPrincipal CustomUserPrincipal principal) {
@@ -34,7 +34,7 @@ public class RiskScoreController {
         return ResponseEntity.ok(riskScoreResponse);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('BANK_ADMINISTRATOR')")
     @GetMapping("customers/{id}/history")
     public ResponseEntity<List<RiskScoreResponse>> getRiskScoreHistory(@PathVariable Long id,
             @AuthenticationPrincipal CustomUserPrincipal principal) {
@@ -43,7 +43,7 @@ public class RiskScoreController {
         return ResponseEntity.ok(scoreHistory);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('BANK_ADMINISTRATOR')")
     @GetMapping("customers/{id}")
     public ResponseEntity<RiskScoreResponse> getRiskScore(@PathVariable Long id,
             @AuthenticationPrincipal CustomUserPrincipal principal) {

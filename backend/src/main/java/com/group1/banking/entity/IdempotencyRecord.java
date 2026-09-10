@@ -3,7 +3,6 @@ package com.group1.banking.entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.time.Instant;
@@ -28,8 +27,7 @@ public class IdempotencyRecord {
     @Column(name = "response_status", nullable = false)
     private int responseStatus;
 
-    @Lob
-    @Column(name = "response_body", nullable = false)
+    @Column(name = "response_body", nullable = false, columnDefinition = "TEXT")
     private String responseBody;
 
     @Column(name = "created_at", nullable = false, updatable = false)

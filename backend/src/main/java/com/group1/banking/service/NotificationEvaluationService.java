@@ -130,7 +130,7 @@ public class NotificationEvaluationService {
 
         auditService.log(AuditEventType.NOTIFICATION_EVALUATE,
             "notifications",
-            RoleName.ADMIN,
+            RoleName.BANK_ADMINISTRATOR,
             "-1",
             "NOTIFICATION",
             req.getEventId(),
@@ -158,7 +158,7 @@ public class NotificationEvaluationService {
                 // Log but do not propagate — scheduler failure notification is best-effort
                 auditService.log(AuditEventType.NOTIFICATION_INTERNAL_FAILED,
                     "notifications",
-                    RoleName.ADMIN,
+                    RoleName.BANK_ADMINISTRATOR,
                     "-1",
                     "NOTIFICATION",
                     eventType,

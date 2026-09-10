@@ -72,7 +72,7 @@ class StandingOrderServiceTest {
         com.group1.banking.entity.User customerUser = new com.group1.banking.entity.User();
         customerUser.setUserId(UUID.randomUUID());
         customerUser.setCustomerId(42L);
-        customerUser.setRoles(List.of(com.group1.banking.enums.RoleName.CUSTOMER));
+        customerUser.setRoles(List.of(com.group1.banking.enums.RoleName.RETAIL_CUSTOMER));
         customerUser.setActive(true);
         customerPrincipal = new CustomUserPrincipal(customerUser);
 
@@ -256,6 +256,7 @@ class StandingOrderServiceTest {
         StandingOrderListResponse result = standingOrderService.list(1001L, customerPrincipal);
 
         assertThat(result.getStandingOrderCount()).isEqualTo(2);
+            verifyNoInteractions(auditService);
     }
 
     @Test

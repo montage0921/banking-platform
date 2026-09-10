@@ -96,7 +96,7 @@ public class AccountService {
                     "ACCOUNT",
                     String.valueOf(saved.getAccountId()),
                     AuditOutcome.SUCCESS,
-                    null);
+                    saved.getAccountType() + " account created with account ID: " + saved.getAccountId());
         } catch (Exception ignored) {}
 
         return AccountResponse.from(saved);
@@ -235,6 +235,7 @@ public class AccountService {
                     "reason=" + reason + (notes != null ? "; notes=" + notes : ""));
         } catch (Exception ignored) {}
 
+
         return new AccountControlActionResponse(
                 account.getAccountId(),
                 previousStatus,
@@ -273,7 +274,16 @@ public class AccountService {
         checkAuthorization(user, account.getCustomer().getCustomerId());
         validateUpdateRequest(account, request);
         if (request.interestRate() != null) {
+            BigDecimal previousInterestRate = account.getInterestRate();
             account.setInterestRate(scaleInterestRate(request.interestRate()));
+            auditService.log(AuditEventType.INTEREST_RATE_UPDATED,
+                    "accounts",
+                    primaryRole(user),
+                    user.getUserId().toString(),
+                    "ACCOUNT",
+                    String.valueOf(accountId),
+                    AuditOutcome.SUCCESS,
+                    previousInterestRate + " -> " + account.getInterestRate());
         }
         Account saved = accountRepository.save(account);
 
@@ -300,21 +310,27 @@ public class AccountService {
         Account account = loadActiveAccount(accountId);
         checkAuthorization(user, account.getCustomer().getCustomerId());
         if (account.getBalance().compareTo(BigDecimal.ZERO.setScale(2, RoundingMode.UNNECESSARY)) != 0) {
-            throw new ConflictException("ACCOUNT_HAS_NON_ZERO_BALANCE", "Account has a non-zero balance", null);
-        }
-        account.setStatus(AccountStatus.CLOSED);
-        account.setDeletedAt(Instant.now());
-        accountRepository.save(account);
-        try {
             auditService.log(AuditEventType.ACCOUNT_DELETED,
                     "accounts",
                     primaryRole(user),
                     user.getUserId().toString(),
                     "ACCOUNT",
                     String.valueOf(accountId),
-                    AuditOutcome.SUCCESS,
-                    null);
-        } catch (Exception ignored) {}
+                    AuditOutcome.DENIED,
+                    "Account deletion denied: non-zero balance " + account.getBalance());
+            throw new ConflictException("ACCOUNT_HAS_NON_ZERO_BALANCE", "Account has a non-zero balance", null);
+        }
+        account.setStatus(AccountStatus.CLOSED);
+        account.setDeletedAt(Instant.now());
+        accountRepository.save(account);
+        auditService.log(AuditEventType.ACCOUNT_DELETED,
+            "accounts",
+            primaryRole(user),
+            user.getUserId().toString(),
+            "ACCOUNT",
+            String.valueOf(accountId),
+            AuditOutcome.SUCCESS,
+            account.getAccountType() + " account deleted with account ID: " + accountId);
     }
 
     private void validateCreateRequest(CreateAccountRequest request, Customer customer) {
@@ -407,6 +423,14 @@ public class AccountService {
                     "Cannot close RRSP account while an active GIC exists", null);
         }
         if (account.getBalance().compareTo(BigDecimal.ZERO.setScale(2, RoundingMode.UNNECESSARY)) != 0) {
+            auditService.log(AuditEventType.ACCOUNT_DELETED,
+                "accounts",
+                primaryRole(user),
+                user.getUserId().toString(),
+                "ACCOUNT",
+                String.valueOf(accountId),
+                AuditOutcome.DENIED,
+                "RRSP account closure denied: non-zero balance " + account.getBalance());
             throw new BadRequestException("NON_ZERO_BALANCE",
                     "Cannot close RRSP account with a non-zero balance", null);
         }
@@ -416,6 +440,14 @@ public class AccountService {
         account.setClosedAt(now);
         account.setDeletedAt(now);
         accountRepository.save(account);
+        auditService.log(AuditEventType.ACCOUNT_DELETED,
+            "accounts",
+            primaryRole(user),
+            user.getUserId().toString(),
+            "ACCOUNT",
+            String.valueOf(accountId),
+            AuditOutcome.SUCCESS,
+            "RRSP account closed with account ID: " + accountId);
 
         try {
             auditService.log(AuditEventType.ACCOUNT_DELETED,
@@ -510,7 +542,7 @@ public class AccountService {
 
     private boolean isAdmin(User user) {
         return user.getRoles().stream()
-                .anyMatch(r -> r.name().equalsIgnoreCase("ADMIN") || r.name().equalsIgnoreCase("ROLE_ADMIN"));
+                .anyMatch(r -> r.name().equalsIgnoreCase("BANK_ADMINISTRATOR") || r.name().equalsIgnoreCase("ROLE_BANK_ADMINISTRATOR"));
     }
 
     private void assertAdmin(User user) {
@@ -520,7 +552,7 @@ public class AccountService {
     }
 
     private RoleName primaryRole(User user) {
-        return user.getRoles().stream().findFirst().orElse(RoleName.CUSTOMER);
+        return user.getRoles().stream().findFirst().orElse(RoleName.RETAIL_CUSTOMER);
     }
 
     private void checkAuthorization(User user, Long customerId) {

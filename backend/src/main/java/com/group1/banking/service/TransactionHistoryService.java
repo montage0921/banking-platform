@@ -119,7 +119,8 @@ public class TransactionHistoryService {
                 try {
                     actorRole = RoleName.valueOf(resolveRole(caller));
                 } catch (Exception ex) {
-                    actorRole = RoleName.CUSTOMER;
+
+                    actorRole = RoleName.RETAIL_CUSTOMER;
                 }
                 auditService.log(AuditEventType.TRANSACTION_HISTORY_DENIED,
                             "transaction-history",
@@ -146,7 +147,7 @@ public class TransactionHistoryService {
         try {
             actorRole2 = com.group1.banking.enums.RoleName.valueOf(resolveRole(caller));
         } catch (Exception ex) {
-            actorRole2 = com.group1.banking.enums.RoleName.CUSTOMER;
+            actorRole2 = com.group1.banking.enums.RoleName.RETAIL_CUSTOMER;
         }
         auditService.log(com.group1.banking.entity.AuditEventType.TRANSACTION_HISTORY_VIEWED,
             "transaction-history",
@@ -156,7 +157,6 @@ public class TransactionHistoryService {
             String.valueOf(accountId),
             com.group1.banking.entity.AuditOutcome.SUCCESS,
             null);
-
         TransactionHistoryResponse response = new TransactionHistoryResponse();
         response.setAccountId(accountId);
         response.setStartDate(effectiveStart);
@@ -188,14 +188,15 @@ public class TransactionHistoryService {
         String paramHash = computeHash(accountId, effectiveStart, effectiveEnd);
 
         // Check cache
-        return exportCacheRepository.findByAccountIdAndParamHash(accountId, paramHash)
+
+        byte[] pdfBytes = exportCacheRepository.findByAccountIdAndParamHash(accountId, paramHash)
             .map(ExportCacheEntity::getPdfData)
             .orElseGet(() -> {
                     List<Transaction> txns =
                             transactionQueryRepository
                                     .findByAccount_AccountIdAndTimestampBetweenOrderByTimestampAsc(
                                             accountId, effectiveStart, effectiveEnd);
-                    byte[] pdfBytes = pdfStatementService.buildPdf(
+                        byte[] generatedPdfBytes = pdfStatementService.buildPdf(
                             accountId,
                             effectiveStart.atZone(ZoneOffset.UTC).toLocalDate(),
                             effectiveEnd.atZone(ZoneOffset.UTC).toLocalDate(),
@@ -204,25 +205,28 @@ public class TransactionHistoryService {
                     ExportCacheEntity cache = new ExportCacheEntity();
                     cache.setAccountId(accountId);
                     cache.setParamHash(paramHash);
-                    cache.setPdfData(pdfBytes);
+                    cache.setPdfData(generatedPdfBytes);
                     exportCacheRepository.save(cache);
-                // Audit: transaction history exported
-                com.group1.banking.enums.RoleName actorRoleEnum;
-                try {
-                actorRoleEnum = com.group1.banking.enums.RoleName.valueOf(resolveRole(caller));
-                } catch (Exception ex) {
-                actorRoleEnum = com.group1.banking.enums.RoleName.CUSTOMER;
-                }
-                auditService.log(com.group1.banking.entity.AuditEventType.TRANSACTION_HISTORY_EXPORTED,
-                    "export",
-                    actorRoleEnum,
-                    caller.getUserId(),
-                    "ACCOUNT",
-                    String.valueOf(accountId),
-                    AuditOutcome.SUCCESS,
-                    paramHash);
-                    return pdfBytes;
+
+                    return generatedPdfBytes;
+
                 });
+
+        RoleName actorRoleEnum;
+        try {
+            actorRoleEnum = RoleName.valueOf(resolveRole(caller));
+        } catch (Exception ex) {
+            actorRoleEnum = RoleName.RETAIL_CUSTOMER;
+        }
+        auditService.log(AuditEventType.TRANSACTION_HISTORY_EXPORTED,
+                "export",
+                actorRoleEnum,
+                caller.getUserId(),
+                "ACCOUNT",
+                String.valueOf(accountId),
+                AuditOutcome.SUCCESS,
+                paramHash);
+        return pdfBytes;
     }
 
     private String computeHash(long accountId, Instant start, Instant end) {

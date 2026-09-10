@@ -29,13 +29,13 @@ public class AuditService {
     public void log(String actorId, String actorRole, String action,
                     String resourceType, String resourceId, String outcome) {
         AuditEventType eventType = AuditEventType.fromString(action);
-        RoleName actorRoleEnum = RoleName.CUSTOMER;
+        RoleName actorRoleEnum = RoleName.RETAIL_CUSTOMER;
         if (actorRole != null) {
             String candidate = actorRole.replace("ROLE_", "").toUpperCase();
             try {
                 actorRoleEnum = RoleName.valueOf(candidate);
             } catch (IllegalArgumentException ignored) {
-                actorRoleEnum = RoleName.CUSTOMER;
+                actorRoleEnum = RoleName.RETAIL_CUSTOMER;
             }
         }
         this.log(eventType, null, actorRoleEnum, actorId, resourceType, resourceId,
@@ -52,7 +52,7 @@ public class AuditService {
         AuditLogEntity entry = new AuditLogEntity();
         entry.setEventType(eventType == null ? AuditEventType.OTHER : eventType);
         entry.setSourceFeature(sourceFeature);
-        entry.setActorType(actorType == null ? RoleName.CUSTOMER : actorType);
+        entry.setActorType(actorType == null ? RoleName.RETAIL_CUSTOMER : actorType);
         entry.setActorId(actorId == null ? "SYSTEM" : actorId);
         entry.setSubjectType(subjectType == null ? "UNKNOWN" : subjectType);
         entry.setSubjectId(subjectId);

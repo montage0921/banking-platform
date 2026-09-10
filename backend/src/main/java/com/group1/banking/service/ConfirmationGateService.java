@@ -138,12 +138,12 @@ public class ConfirmationGateService {
 
     private static RoleName roleFor(String actorRole) {
         if (actorRole == null) {
-            return RoleName.CUSTOMER;
+            return RoleName.RETAIL_CUSTOMER;
         }
         try {
             return RoleName.valueOf(actorRole.replace("ROLE_", "").toUpperCase());
         } catch (IllegalArgumentException ex) {
-            return RoleName.CUSTOMER;
+            return RoleName.RETAIL_CUSTOMER;
         }
     }
 }

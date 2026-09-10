@@ -51,10 +51,10 @@ class TransferChatToolTest {
     @Test
     void proposeTransfer_shouldCreateProposal_andRecordItOnTracker() {
         PendingAgentActionEntity proposed = proposedEntity();
-        when(confirmationGateService.propose(eq(CUSTOMER_ID), eq("CUSTOMER"), eq(PendingAgentActionType.TRANSFER),
+        when(confirmationGateService.propose(eq(CUSTOMER_ID), eq("RETAIL_CUSTOMER"), eq(PendingAgentActionType.TRANSFER),
                 any(), any())).thenReturn(proposed);
 
-        String reply = tool.proposeTransfer(1L, 2L, new BigDecimal("50.00"), "rent", toolContext("CUSTOMER"));
+        String reply = tool.proposeTransfer(1L, 2L, new BigDecimal("50.00"), "rent", toolContext("RETAIL_CUSTOMER"));
 
         assertThat(reply).contains("50.00").contains(proposed.getToken());
         assertThat(pendingActionTracker.drainProposal()).isPresent();
@@ -63,14 +63,14 @@ class TransferChatToolTest {
 
     @Test
     void proposeTransfer_shouldRecordItselfOnToolSelectionTracker_evenWhenRefused() {
-        tool.proposeTransfer(1L, 999L, new BigDecimal("50.00"), null, toolContext("CUSTOMER"));
+        tool.proposeTransfer(1L, 999L, new BigDecimal("50.00"), null, toolContext("RETAIL_CUSTOMER"));
 
         assertThat(toolSelectionTracker.drainToolsUsed()).containsExactly("proposeTransfer");
     }
 
     @Test
     void proposeTransfer_shouldRefuse_whenAccountNotOwnedByCustomer() {
-        String reply = tool.proposeTransfer(1L, 999L, new BigDecimal("50.00"), null, toolContext("CUSTOMER"));
+        String reply = tool.proposeTransfer(1L, 999L, new BigDecimal("50.00"), null, toolContext("RETAIL_CUSTOMER"));
 
         assertThat(reply).containsIgnoringCase("aren't available");
         assertThat(pendingActionTracker.drainProposal()).isEmpty();
@@ -78,7 +78,7 @@ class TransferChatToolTest {
 
     @Test
     void proposeTransfer_shouldRefuse_whenAmountExceedsBalance() {
-        String reply = tool.proposeTransfer(2L, 1L, new BigDecimal("999.00"), null, toolContext("CUSTOMER"));
+        String reply = tool.proposeTransfer(2L, 1L, new BigDecimal("999.00"), null, toolContext("RETAIL_CUSTOMER"));
 
         assertThat(reply).containsIgnoringCase("balance");
         assertThat(pendingActionTracker.drainProposal()).isEmpty();
@@ -86,14 +86,14 @@ class TransferChatToolTest {
 
     @Test
     void proposeTransfer_shouldRefuse_whenSameAccountBothSides() {
-        String reply = tool.proposeTransfer(1L, 1L, new BigDecimal("10.00"), null, toolContext("CUSTOMER"));
+        String reply = tool.proposeTransfer(1L, 1L, new BigDecimal("10.00"), null, toolContext("RETAIL_CUSTOMER"));
 
         assertThat(reply).containsIgnoringCase("same account");
     }
 
     @Test
     void proposeTransfer_shouldRefuse_whenAmountNotPositive() {
-        String reply = tool.proposeTransfer(1L, 2L, new BigDecimal("0.00"), null, toolContext("CUSTOMER"));
+        String reply = tool.proposeTransfer(1L, 2L, new BigDecimal("0.00"), null, toolContext("RETAIL_CUSTOMER"));
 
         assertThat(reply).containsIgnoringCase("at least");
     }

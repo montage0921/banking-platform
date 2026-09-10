@@ -55,7 +55,7 @@ public class AuthServiceImpl implements AuthService {
 
         List<RoleName> requestedRoles =
                 (req.getRoles() == null || req.getRoles().isEmpty())
-                        ? List.of(RoleName.CUSTOMER)
+                        ? List.of(RoleName.RETAIL_CUSTOMER)
                         : req.getRoles();
 
         User user = new User();

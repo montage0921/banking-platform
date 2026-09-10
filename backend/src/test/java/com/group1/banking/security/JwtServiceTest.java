@@ -35,7 +35,7 @@ class JwtServiceTest {
         user.setUserId(UUID.randomUUID());
         user.setUsername("test@example.com");
         user.setPasswordHash("hashed");
-        user.setRoles(List.of(RoleName.CUSTOMER));
+        user.setRoles(List.of(RoleName.RETAIL_CUSTOMER));
         user.setActive(true);
     }
 
@@ -94,23 +94,23 @@ class JwtServiceTest {
     void extractRoles_shouldReturnCustomerRole() {
         String token = jwtService.generateAccessToken(user);
         List<String> roles = jwtService.extractRoles(token);
-        assertThat(roles).containsExactly("CUSTOMER");
+        assertThat(roles).containsExactly("RETAIL_CUSTOMER");
     }
 
     @Test
     void extractRoles_shouldReturnAdminRole() {
-        user.setRoles(List.of(RoleName.ADMIN));
+        user.setRoles(List.of(RoleName.BANK_ADMINISTRATOR));
         String token = jwtService.generateAccessToken(user);
         List<String> roles = jwtService.extractRoles(token);
-        assertThat(roles).containsExactly("ADMIN");
+        assertThat(roles).containsExactly("BANK_ADMINISTRATOR");
     }
 
     @Test
     void extractRoles_shouldReturnMultipleRoles() {
-        user.setRoles(List.of(RoleName.CUSTOMER, RoleName.ADMIN));
+        user.setRoles(List.of(RoleName.RETAIL_CUSTOMER, RoleName.BANK_ADMINISTRATOR));
         String token = jwtService.generateAccessToken(user);
         List<String> roles = jwtService.extractRoles(token);
-        assertThat(roles).containsExactlyInAnyOrder("CUSTOMER", "ADMIN");
+        assertThat(roles).containsExactlyInAnyOrder("RETAIL_CUSTOMER", "BANK_ADMINISTRATOR");
     }
 
     // ===== extractAllClaims TESTS =====

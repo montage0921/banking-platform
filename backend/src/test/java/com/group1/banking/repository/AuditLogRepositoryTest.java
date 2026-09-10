@@ -59,7 +59,7 @@ class AuditLogRepositoryTest {
         assertThat(found).isPresent();
         assertThat(found.get().getEventType()).isEqualTo(AuditEventType.FUNDS_TRANSFERRED);
         assertThat(found.get().getOutcome()).isEqualTo(AuditOutcome.SUCCESS);
-        assertThat(found.get().getActorType()).isEqualTo(com.group1.banking.enums.RoleName.CUSTOMER);
+        assertThat(found.get().getActorType()).isEqualTo(com.group1.banking.enums.RoleName.RETAIL_CUSTOMER);
         assertThat(found.get().getSubjectType()).isEqualTo("ACCOUNT");
         assertThat(found.get().getSubjectId()).isEqualTo("account/1001");
     }
@@ -67,7 +67,7 @@ class AuditLogRepositoryTest {
     private AuditLogEntity buildLog(String actorId) {
         AuditLogEntity log = new AuditLogEntity();
         log.setActorId(actorId);
-        log.setActorType(com.group1.banking.enums.RoleName.CUSTOMER);
+        log.setActorType(com.group1.banking.enums.RoleName.RETAIL_CUSTOMER);
         log.setEventType(AuditEventType.FUNDS_TRANSFERRED);
         log.setSubjectType("ACCOUNT");
         log.setOutcome(AuditOutcome.SUCCESS);

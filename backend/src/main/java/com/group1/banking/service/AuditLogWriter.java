@@ -26,7 +26,7 @@ public class AuditLogWriter {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public AuditLogEntity save(AuditLogEntity entry) {
         AuditLogEntity saved = auditLogRepository.save(entry);
-        log.debug("Audit saved: {} {} {} {}", saved.getLogId(), saved.getEventType(), saved.getActorId(), saved.getOutcome());
+        log.info("Audit saved: {} {} {} {}", saved.getLogId(), saved.getEventType(), saved.getActorId(), saved.getOutcome());
         return saved;
     }
 }

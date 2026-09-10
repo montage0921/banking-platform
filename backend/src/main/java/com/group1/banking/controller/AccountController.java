@@ -53,7 +53,7 @@ public class AccountController {
     }
 
     @GetMapping("/accounts")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('BANK_ADMINISTRATOR')")
     public List<AccountResponse> listAllAccounts() {
         return accountService.listAllAccounts();
     }
@@ -87,7 +87,7 @@ public class AccountController {
     }
 
     @PostMapping("/accounts/{accountId}/freeze")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('BANK_ADMINISTRATOR')")
     public AccountControlActionResponse freezeAccount(
             @PathVariable Long accountId,
             @Valid @RequestBody FreezeAccountRequest request) {
@@ -95,7 +95,7 @@ public class AccountController {
     }
 
     @PostMapping("/accounts/{accountId}/unfreeze")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('BANK_ADMINISTRATOR')")
     public AccountControlActionResponse unfreezeAccount(
             @PathVariable Long accountId,
             @RequestBody(required = false) UnfreezeAccountRequest request) {
@@ -103,7 +103,7 @@ public class AccountController {
     }
 
     @GetMapping("/accounts/{accountId}/control-history")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('BANK_ADMINISTRATOR')")
     public AccountControlHistoryResponse controlHistory(@PathVariable Long accountId) {
         return accountService.getControlHistory(accountId);
     }

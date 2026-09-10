@@ -35,32 +35,32 @@ public class CustomerController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAuthority('CUSTOMER_CREATE') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('CUSTOMER_CREATE') or hasRole('BANK_ADMINISTRATOR')")
     public ResponseEntity<CustomerResponse> createCustomer(@RequestBody @Valid CreateCustomerRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(customerService.createCustomer(request));
     }
 
     @PatchMapping("/{customerId}")
-    @PreAuthorize("(hasAuthority('CUSTOMER_UPDATE') and @ownershipService.canAccessCustomer(authentication, #customerId)) or hasRole('ADMIN')")
+    @PreAuthorize("(hasAuthority('CUSTOMER_UPDATE') and @ownershipService.canAccessCustomer(authentication, #customerId)) or hasRole('BANK_ADMINISTRATOR')")
     public ResponseEntity<CustomerResponse> updateCustomer(@PathVariable Long customerId,
                                                            @RequestBody @Valid PatchCustomerRequest request) {
         return ResponseEntity.ok(customerService.updateCustomer(customerId, request));
     }
 
     @GetMapping("/{customerId}")
-    @PreAuthorize("(hasAuthority('CUSTOMER_READ') and @ownershipService.canAccessCustomer(authentication, #customerId)) or hasRole('ADMIN')")
+    @PreAuthorize("(hasAuthority('CUSTOMER_READ') and @ownershipService.canAccessCustomer(authentication, #customerId)) or hasRole('BANK_ADMINISTRATOR')")
     public ResponseEntity<CustomerResponse> getCustomer(@PathVariable Long customerId) {
         return ResponseEntity.ok(customerService.getCustomer(customerId));
     }
     
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('BANK_ADMINISTRATOR')")
     public ResponseEntity<List<CustomerResponse>> getAllCustomers() {
         return ResponseEntity.ok(customerService.getAllCustomers());
     }
     
     @DeleteMapping("/{customerId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('BANK_ADMINISTRATOR')")
     public Map<String, String> deleteCustomer(
             @PathVariable Long customerId) {
     	customerService.deleteCustomer(customerId);
